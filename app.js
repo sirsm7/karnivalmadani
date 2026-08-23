@@ -39,7 +39,7 @@ async function initApp() {
         const select = document.getElementById('select_sekolah');
         res.data.forEach(s => {
             const opt = document.createElement('option');
-            opt.value = JSON.stringify(s); // Simpan objek penuh sebagai nilai
+            opt.value = JSON.stringify(s);
             opt.textContent = `[${s.kod}] ${s.nama}`;
             select.appendChild(opt);
         });
@@ -82,7 +82,6 @@ const app = {
     pilihPertandingan: (jenis) => {
         appState.pertandingan = jenis;
         
-        // Tetapkan dropdown kategori berdasarkan pertandingan dan jenis sekolah
         const selectKategori = document.getElementById('guru_kategori');
         selectKategori.innerHTML = ''; 
         
@@ -108,7 +107,6 @@ const app = {
             selectKategori.appendChild(opt);
         });
 
-        // Set Title
         document.getElementById('tajuk_borang_guru').textContent = `Daftar Guru: ${jenis} 2026`;
         
         viewPilihPertandingan.classList.add('hidden');
@@ -135,17 +133,14 @@ const app = {
 
         showLoading("Menyemak maklumat guru...");
         
-        // Semak jika guru sudah ada
         const semakRes = await window.db.semakGuruExist(appState.sekolah.id, nokp, appState.pertandingan);
         
         if (semakRes.success && semakRes.data) {
-            // Guru sudah wujud
             appState.guru = semakRes.data;
             hideLoading();
             alert("Anda telah didaftarkan sebelum ini. Membuka dashboard pengurusan pasukan anda...");
             app.bukaDashboard();
         } else {
-            // Guru belum wujud, Daftar baru
             const guruData = {
                 sekolah_id: appState.sekolah.id,
                 nama: nama,
@@ -292,7 +287,6 @@ const app = {
                 ? `<span class="bg-green-100 text-green-800 text-xs font-semibold px-2 py-1 rounded">Disahkan Oleh Admin</span>` 
                 : `<span class="bg-yellow-100 text-yellow-800 text-xs font-semibold px-2 py-1 rounded">Menunggu Semakan</span>`;
 
-            // Action UI based on competition type
             let actionUI = '';
             if (appState.pertandingan === 'Animasi AI') {
                 const currentLink = pasukan.pautan_hasil || '';
@@ -319,7 +313,6 @@ const app = {
                 `;
             }
 
-            // Sijil Button UI
             const hasSubmission = !!pasukan.pautan_hasil;
             const canPrint = isDisahkan && hasSubmission;
             
@@ -366,7 +359,7 @@ const app = {
 
         if (res.success) {
             alert("Pautan YouTube berjaya disimpan.");
-            app.loadPasukanList(); // reload to update UI state
+            app.loadPasukanList();
         } else {
             alert("Ralat menyimpan pautan: " + res.error);
         }
@@ -381,18 +374,15 @@ const app = {
 
         const file = fileInput.files[0];
         
-        // Membaca fail sebagai Base64 Data URL
         const reader = new FileReader();
         reader.onload = async (e) => {
             const dataUrl = e.target.result;
             
             showLoading("Memuat naik fail ke Google Drive... Proses ini mungkin mengambil masa.");
             
-            // Hantar ke GAS
             const gasRes = await window.db.muatNaikFailGAS(dataUrl, file.name, file.type, appState.sekolah.kod, nama_pasukan);
             
             if (gasRes.success) {
-                // Selepas berjaya upload, update pautan di Supabase
                 const dbRes = await window.db.updatePautanHasil(pasukan_id, gasRes.fileUrl);
                 hideLoading();
 
@@ -412,7 +402,6 @@ const app = {
         reader.readAsDataURL(file);
     },
 
-    // --- PENJANAAN SIJIL ---
     janaSijilPDF: (pasukan_id) => {
         const pasukan = appState.pasukanList.find(p => p.id === pasukan_id);
         if (!pasukan) return;
@@ -422,7 +411,6 @@ const app = {
         try {
             const { jsPDF } = window.jspdf;
             
-            // Menjana satu dokumen PDF. Muka surat akan di tambah ikut jumlah individu (1 Guru + 2 Murid)
             const doc = new jsPDF({
                 orientation: 'landscape',
                 unit: 'mm',
@@ -433,16 +421,14 @@ const app = {
             const tinggiA4 = 210;
 
             const generateHalamanSijil = (nama, role) => {
-                // Background Border
-                doc.setDrawColor(30, 64, 175); // Blue-800
+                doc.setDrawColor(30, 64, 175);
                 doc.setLineWidth(5);
                 doc.rect(10, 10, lebarA4 - 20, tinggiA4 - 20);
                 
-                doc.setDrawColor(234, 179, 8); // Yellow-500
+                doc.setDrawColor(234, 179, 8);
                 doc.setLineWidth(1);
                 doc.rect(12, 12, lebarA4 - 24, tinggiA4 - 24);
 
-                // Letak Logo (Jika berjaya dimuat)
                 if (appState.imgLogoBase64) {
                     try {
                         doc.addImage(appState.imgLogoBase64, 'PNG', lebarA4/2 - 20, 20, 40, 40);
@@ -451,7 +437,6 @@ const app = {
                     }
                 }
 
-                // Teks Sijil
                 doc.setFont("helvetica", "bold");
                 doc.setFontSize(28);
                 doc.setTextColor(30, 64, 175);
@@ -462,13 +447,11 @@ const app = {
                 doc.setTextColor(50, 50, 50);
                 doc.text("Dengan ini disahkan bahawa", lebarA4/2, 90, { align: "center" });
 
-                // Nama Peserta
                 doc.setFont("helvetica", "bold");
                 doc.setFontSize(22);
                 doc.setTextColor(0, 0, 0);
                 doc.text(nama.toUpperCase(), lebarA4/2, 105, { align: "center" });
 
-                // Peranan dan Sekolah
                 doc.setFont("helvetica", "normal");
                 doc.setFontSize(14);
                 doc.text(`Telah menyertai sebagai ${role} mewakili`, lebarA4/2, 120, { align: "center" });
@@ -477,14 +460,13 @@ const app = {
                 doc.setFontSize(16);
                 doc.text(appState.sekolah.nama.toUpperCase(), lebarA4/2, 130, { align: "center" });
 
-                // Nama Pertandingan
                 doc.setFont("helvetica", "normal");
                 doc.setFontSize(14);
                 doc.text(`dalam`, lebarA4/2, 145, { align: "center" });
 
                 doc.setFont("helvetica", "bold");
                 doc.setFontSize(16);
-                doc.setTextColor(185, 28, 28); // Red-700
+                doc.setTextColor(185, 28, 28);
                 let tajukPert = appState.pertandingan === 'Animasi AI' ? "Pertandingan Video Animasi AI Kemerdekaan 2026" : "Pertandingan Robotik: Mikrobotik 2026";
                 doc.text(tajukPert.toUpperCase(), lebarA4/2, 155, { align: "center" });
 
@@ -493,7 +475,6 @@ const app = {
                 doc.setTextColor(50, 50, 50);
                 doc.text(`Sempena Karnival Pendidikan Madani PPD Alor Gajah`, lebarA4/2, 165, { align: "center" });
 
-                // Tandatangan Pegawai (Jika berjaya dimuat)
                 if (appState.imgSignBase64) {
                     try {
                         doc.addImage(appState.imgSignBase64, 'PNG', lebarA4/2 - 25, 170, 50, 20);
@@ -507,16 +488,13 @@ const app = {
                 doc.text("PEJABAT PENDIDIKAN DAERAH ALOR GAJAH", lebarA4/2, 200, { align: "center" });
             };
 
-            // 1. Sijil Untuk Guru
             generateHalamanSijil(appState.guru.nama, "GURU PEMBIMBING");
 
-            // 2. Sijil Untuk Murid 1
             if (pasukan.karnival_murid && pasukan.karnival_murid.length > 0) {
                 doc.addPage();
                 generateHalamanSijil(pasukan.karnival_murid[0].nama, "PESERTA");
             }
 
-            // 3. Sijil Untuk Murid 2
             if (pasukan.karnival_murid && pasukan.karnival_murid.length > 1) {
                 doc.addPage();
                 generateHalamanSijil(pasukan.karnival_murid[1].nama, "PESERTA");
@@ -542,9 +520,6 @@ function hideLoading() {
 }
 
 function preloadImagesForPDF() {
-    // Fungsi alternatif untuk menukar URL image drive ke Base64 dengan menggunakan canvas.
-    // Jika Google masih block melalui canvas (tainted canvas due to strict CORS), ia akan resolve null.
-    // Ini mengelakkan keseluruhan app dari break.
     const getBase64ImageFromUrlViaCanvas = (imageUrl) => {
         return new Promise((resolve) => {
             let img = new Image();
@@ -567,7 +542,7 @@ function preloadImagesForPDF() {
                 console.warn("Gagal muat imej ke canvas (CORS disekat).", imageUrl);
                 resolve(null);
             };
-            img.src = imageUrl;
+            img.src = `https://api.allorigins.win/raw?url=${encodeURIComponent(imageUrl)}`;
         });
     }
     
@@ -575,5 +550,4 @@ function preloadImagesForPDF() {
     getBase64ImageFromUrlViaCanvas(appState.signUrl).then(data => { if(data) appState.imgSignBase64 = data; });
 }
 
-// Export app to window for event inline handlers in HTML
 window.app = app;
