@@ -1,11 +1,12 @@
-// Inisialisasi Supabase Client
-const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+// Inisialisasi Supabase Client dengan nama pembolehubah yang berbeza
+// untuk mengelakkan konflik dengan window.supabase dari CDN
+const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 const db = {
     // 1. Dapatkan Senarai Sekolah (Diurut mengikut kod)
     async getSenaraiSekolah() {
         try {
-            const { data, error } = await supabase
+            const { data, error } = await supabaseClient
                 .from('karnival_sekolah')
                 .select('*')
                 .order('kod', { ascending: true });
@@ -21,7 +22,7 @@ const db = {
     // 2. Daftar Guru Baru
     async daftarGuru(guruData) {
         try {
-            const { data, error } = await supabase
+            const { data, error } = await supabaseClient
                 .from('karnival_guru')
                 .insert([guruData])
                 .select()
@@ -38,7 +39,7 @@ const db = {
     // 3. Semak Guru (Jika guru telah daftar untuk sekolah dan pertandingan tertentu)
     async semakGuruExist(sekolah_id, nokp, pertandingan) {
         try {
-            const { data, error } = await supabase
+            const { data, error } = await supabaseClient
                 .from('karnival_guru')
                 .select('*, karnival_sekolah(kod, nama)')
                 .eq('sekolah_id', sekolah_id)
@@ -57,7 +58,7 @@ const db = {
     // 4. Daftar Pasukan & Murid (Menggunakan RPC secara atomik)
     async daftarPasukan(guru_id, nama_pasukan, murid1, murid2) {
         try {
-            const { data, error } = await supabase.rpc('karnival_daftar_pasukan', {
+            const { data, error } = await supabaseClient.rpc('karnival_daftar_pasukan', {
                 p_guru_id: guru_id,
                 p_nama_pasukan: nama_pasukan,
                 p_murid1_nama: murid1.nama,
@@ -79,7 +80,7 @@ const db = {
     // 5. Dapatkan Senarai Pasukan bawah bimbingan Guru (beserta nama murid)
     async getPasukanOlehGuru(guru_id) {
         try {
-            const { data, error } = await supabase
+            const { data, error } = await supabaseClient
                 .from('karnival_pasukan')
                 .select('*, karnival_murid(*)')
                 .eq('guru_id', guru_id)
@@ -96,7 +97,7 @@ const db = {
     // 6. Kemaskini Pautan Hasil Video (Update pautan_hasil di table karnival_pasukan)
     async updatePautanHasil(pasukan_id, pautan) {
         try {
-            const { data, error } = await supabase
+            const { data, error } = await supabaseClient
                 .from('karnival_pasukan')
                 .update({ pautan_hasil: pautan })
                 .eq('id', pasukan_id);

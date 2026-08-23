@@ -442,10 +442,13 @@ const app = {
                 doc.setLineWidth(1);
                 doc.rect(12, 12, lebarA4 - 24, tinggiA4 - 24);
 
-                // Letak Logo
+                // Letak Logo (Jika berjaya dimuat)
                 if (appState.imgLogoBase64) {
-                    // Logo aspect ratio control (approx square/landscape based on usual KPM/PPD logos)
-                    doc.addImage(appState.imgLogoBase64, 'PNG', lebarA4/2 - 20, 20, 40, 40);
+                    try {
+                        doc.addImage(appState.imgLogoBase64, 'PNG', lebarA4/2 - 20, 20, 40, 40);
+                    } catch (e) {
+                        console.warn("Gagal melukis logo di PDF", e);
+                    }
                 }
 
                 // Teks Sijil
@@ -490,9 +493,13 @@ const app = {
                 doc.setTextColor(50, 50, 50);
                 doc.text(`Sempena Karnival Pendidikan Madani PPD Alor Gajah`, lebarA4/2, 165, { align: "center" });
 
-                // Tandatangan Pegawai
+                // Tandatangan Pegawai (Jika berjaya dimuat)
                 if (appState.imgSignBase64) {
-                    doc.addImage(appState.imgSignBase64, 'PNG', lebarA4/2 - 25, 170, 50, 20);
+                    try {
+                        doc.addImage(appState.imgSignBase64, 'PNG', lebarA4/2 - 25, 170, 50, 20);
+                    } catch (e) {
+                         console.warn("Gagal melukis tandatangan di PDF", e);
+                    }
                 }
                 
                 doc.setFontSize(10);
@@ -535,27 +542,37 @@ function hideLoading() {
 }
 
 function preloadImagesForPDF() {
-    // Fungsi untuk menukar URL image drive ke Base64 (untuk elak isu CORS masa jsPDF nak lukis)
-    const getBase64ImageFromUrl = async (imageUrl) => {
-        try {
-            var res = await fetch(imageUrl);
-            var blob = await res.blob();
-            return new Promise((resolve, reject) => {
-                var reader = new FileReader();
-                reader.onloadend = () => resolve(reader.result);
-                reader.onerror = reject;
-                reader.readAsDataURL(blob);
-            });
-        } catch(e) {
-            console.error("Gagal load imej ke base64:", imageUrl, e);
-            return null;
-        }
+    // Fungsi alternatif untuk menukar URL image drive ke Base64 dengan menggunakan canvas.
+    // Jika Google masih block melalui canvas (tainted canvas due to strict CORS), ia akan resolve null.
+    // Ini mengelakkan keseluruhan app dari break.
+    const getBase64ImageFromUrlViaCanvas = (imageUrl) => {
+        return new Promise((resolve) => {
+            let img = new Image();
+            img.crossOrigin = 'Anonymous';
+            img.onload = () => {
+                let canvas = document.createElement('canvas');
+                let ctx = canvas.getContext('2d');
+                canvas.height = img.naturalHeight;
+                canvas.width = img.naturalWidth;
+                ctx.drawImage(img, 0, 0);
+                try {
+                    let dataUrl = canvas.toDataURL('image/png');
+                    resolve(dataUrl);
+                } catch (e) {
+                    console.warn("Tainted canvas dihalang oleh CORS. Imej tidak dapat diekstrak.");
+                    resolve(null);
+                }
+            };
+            img.onerror = () => {
+                console.warn("Gagal muat imej ke canvas (CORS disekat).", imageUrl);
+                resolve(null);
+            };
+            img.src = imageUrl;
+        });
     }
     
-    // Google Drive URL might face CORS when fetched by JS if not proper setup, 
-    // but using thumbnail endpoint usually bypasses it for public files.
-    getBase64ImageFromUrl(appState.logoUrl).then(data => { if(data) appState.imgLogoBase64 = data; });
-    getBase64ImageFromUrl(appState.signUrl).then(data => { if(data) appState.imgSignBase64 = data; });
+    getBase64ImageFromUrlViaCanvas(appState.logoUrl).then(data => { if(data) appState.imgLogoBase64 = data; });
+    getBase64ImageFromUrlViaCanvas(appState.signUrl).then(data => { if(data) appState.imgSignBase64 = data; });
 }
 
 // Export app to window for event inline handlers in HTML
