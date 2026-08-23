@@ -105,7 +105,7 @@
         // Supabase Constants
         const SUPABASE_URL = "https://app.tech4ag.my";
         const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYW5vbiIsImlzcyI6InN1cGFiYXNlIiwiaWF0IjoxNzYzMzczNjQ1LCJleHAiOjIwNzg3MzM2NDV9.vZOedqJzUn01PjwfaQp7VvRzSm4aRMr21QblPDK8AoY";
-        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        const supabaseClientAdmin = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
         const adminApp = {
             dataPasukan: [],
@@ -134,7 +134,7 @@
                 
                 try {
                     // Fetch data menggunakan Relational Queries Supabase
-                    const { data, error } = await supabase
+                    const { data, error } = await supabaseClientAdmin
                         .from('karnival_pasukan')
                         .select(`
                             id, nama_pasukan, pautan_hasil, disahkan, created_at,
@@ -242,7 +242,7 @@
                 if(!confirm("Anda pasti untuk mengesahkan penyertaan ini? Pengesahan membenarkan guru mencetak sijil.")) return;
                 
                 document.getElementById('loading_overlay').classList.remove('hidden');
-                const { error } = await supabase.from('karnival_pasukan').update({ disahkan: true }).eq('id', id);
+                const { error } = await supabaseClientAdmin.from('karnival_pasukan').update({ disahkan: true }).eq('id', id);
                 if (error) {
                     alert("Ralat mengemas kini rekod.");
                     console.error(error);
@@ -254,7 +254,7 @@
                 if(!confirm("Anda pasti untuk membatalkan pengesahan ini?")) return;
                 
                 document.getElementById('loading_overlay').classList.remove('hidden');
-                const { error } = await supabase.from('karnival_pasukan').update({ disahkan: false }).eq('id', id);
+                const { error } = await supabaseClientAdmin.from('karnival_pasukan').update({ disahkan: false }).eq('id', id);
                 if (error) {
                     alert("Ralat mengemas kini rekod.");
                     console.error(error);
