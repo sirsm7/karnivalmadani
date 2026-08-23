@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="ms">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Panel Urusetia - Karnival Pendidikan Madani</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Supabase JS -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body class="bg-gray-100 min-h-screen font-sans text-gray-800">
+
+    <div class="max-w-6xl mx-auto px-4 py-8">
+        
+        <header class="bg-white shadow-md rounded-lg p-6 mb-8 text-center flex items-center justify-center gap-4">
+            <img src="https://drive.google.com/thumbnail?id=1X_8tadWYrA77nEizDAVrJcuGVK5KLRvQ&sz=w800" alt="Logo" class="h-16 object-contain">
+            <div>
+                <h1 class="text-2xl font-bold text-gray-800">PANEL URUSETIA</h1>
+                <p class="text-gray-600 font-semibold">Karnival Pendidikan Madani PPD Alor Gajah 2026</p>
+            </div>
+        </header>
+
+        <main id="app_container" class="bg-white shadow-md rounded-lg p-6">
+            
+            <!-- VIEW: LOGIN -->
+            <section id="view_login">
+                <div class="max-w-md mx-auto py-8">
+                    <h2 class="text-xl font-bold border-b pb-2 mb-4 text-center">Log Masuk Admin</h2>
+                    <form id="form_login" onsubmit="adminApp.login(event)">
+                        <div class="mb-4">
+                            <label class="block text-gray-700 font-bold mb-2">Katalaluan:</label>
+                            <input type="password" id="admin_pwd" required class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Masukkan katalaluan...">
+                        </div>
+                        <button type="submit" class="w-full bg-blue-600 text-white font-bold py-2 px-4 rounded hover:bg-blue-700 transition">Log Masuk</button>
+                    </form>
+                    <div class="mt-4 text-center">
+                        <a href="index.html" class="text-sm text-blue-500 hover:underline">&larr; Kembali ke Laman Utama (Peserta)</a>
+                    </div>
+                </div>
+            </section>
+
+            <!-- VIEW: DASHBOARD -->
+            <section id="view_dashboard" class="hidden">
+                <div class="flex justify-between items-center border-b pb-2 mb-6">
+                    <h2 class="text-xl font-bold text-gray-800">Dashboard Semakan Penyertaan</h2>
+                    <div>
+                        <button onclick="adminApp.loadSenarai()" class="text-blue-600 text-sm hover:underline mr-4">🔄 Muat Semula Data</button>
+                        <button onclick="adminApp.logout()" class="text-red-500 text-sm hover:underline">Keluar</button>
+                    </div>
+                </div>
+
+                <!-- Filters -->
+                <div class="bg-gray-50 p-4 rounded-lg mb-6 border flex gap-4">
+                    <div class="w-1/2">
+                        <label class="block text-sm font-bold mb-1">Tapis Pertandingan:</label>
+                        <select id="filter_pertandingan" class="w-full px-2 py-1 border rounded" onchange="adminApp.renderTable()">
+                            <option value="Semua">Semua Pertandingan</option>
+                            <option value="Animasi AI">Pertandingan Video Animasi AI Kemerdekaan 2026</option>
+                            <option value="Mikrobotik">Pertandingan Robotik: Mikrobotik 2026</option>
+                        </select>
+                    </div>
+                    <div class="w-1/2">
+                        <label class="block text-sm font-bold mb-1">Tapis Status:</label>
+                        <select id="filter_status" class="w-full px-2 py-1 border rounded" onchange="adminApp.renderTable()">
+                            <option value="Semua">Semua Status</option>
+                            <option value="Menunggu">Menunggu Semakan / Belum Hantar</option>
+                            <option value="Disahkan">Telah Disahkan</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Senarai Penuh -->
+                <div class="overflow-x-auto">
+                    <table class="min-w-full bg-white border">
+                        <thead>
+                            <tr class="bg-gray-800 text-white text-sm leading-normal">
+                                <th class="py-3 px-3 text-left">Sekolah & Guru</th>
+                                <th class="py-3 px-3 text-left">Pasukan & Murid</th>
+                                <th class="py-3 px-3 text-left">Kategori & Pertandingan</th>
+                                <th class="py-3 px-3 text-left">Pautan / Fail</th>
+                                <th class="py-3 px-3 text-center">Status Sijil</th>
+                                <th class="py-3 px-3 text-center">Tindakan</th>
+                            </tr>
+                        </thead>
+                        <tbody id="table_body" class="text-gray-600 text-sm font-light">
+                            <!-- Rows akan dimasukkan melalui JS -->
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+        </main>
+    </div>
+
+    <!-- Loading Overlay -->
+    <div id="loading_overlay" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden flex items-center justify-center">
+        <div class="bg-white p-6 rounded-lg shadow-lg text-center">
+            <div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 mb-4"></div>
+            <p class="font-bold">Memuatkan rekod...</p>
+        </div>
+    </div>
+
+    <script>
+        // Supabase Constants
+        const SUPABASE_URL = "https://app.tech4ag.my";
+        const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYW5vbiIsImlzcyI6InN1cGFiYXNlIiwiaWF0IjoxNzYzMzczNjQ1LCJleHAiOjIwNzg3MzM2NDV9.vZOedqJzUn01PjwfaQp7VvRzSm4aRMr21QblPDK8AoY";
+        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+        const adminApp = {
+            dataPasukan: [],
+
+            login: (e) => {
+                e.preventDefault();
+                const pwd = document.getElementById('admin_pwd').value;
+                if (pwd === 'ppdag@12345') {
+                    document.getElementById('view_login').classList.add('hidden');
+                    document.getElementById('view_dashboard').classList.remove('hidden');
+                    adminApp.loadSenarai();
+                } else {
+                    alert('Katalaluan Salah!');
+                }
+            },
+
+            logout: () => {
+                document.getElementById('view_dashboard').classList.add('hidden');
+                document.getElementById('view_login').classList.remove('hidden');
+                document.getElementById('admin_pwd').value = '';
+                adminApp.dataPasukan = [];
+            },
+
+            loadSenarai: async () => {
+                document.getElementById('loading_overlay').classList.remove('hidden');
+                
+                try {
+                    // Fetch data menggunakan Relational Queries Supabase
+                    const { data, error } = await supabase
+                        .from('karnival_pasukan')
+                        .select(`
+                            id, nama_pasukan, pautan_hasil, disahkan, created_at,
+                            karnival_guru ( id, nama, notel, pertandingan, kategori_pertandingan, karnival_sekolah (kod, nama) ),
+                            karnival_murid ( nama, nokp )
+                        `)
+                        .order('created_at', { ascending: false });
+
+                    if (error) throw error;
+                    
+                    adminApp.dataPasukan = data;
+                    adminApp.renderTable();
+                } catch (error) {
+                    console.error("Ralat memuat senarai:", error);
+                    alert("Ralat memuat turun data.");
+                } finally {
+                    document.getElementById('loading_overlay').classList.add('hidden');
+                }
+            },
+
+            renderTable: () => {
+                const fPertandingan = document.getElementById('filter_pertandingan').value;
+                const fStatus = document.getElementById('filter_status').value;
+                const tbody = document.getElementById('table_body');
+                
+                tbody.innerHTML = '';
+
+                let filtered = adminApp.dataPasukan.filter(item => {
+                    const guru = item.karnival_guru;
+                    if (!guru) return false;
+
+                    let matchPertandingan = true;
+                    if (fPertandingan !== 'Semua') {
+                        matchPertandingan = guru.pertandingan === fPertandingan;
+                    }
+
+                    let matchStatus = true;
+                    if (fStatus === 'Menunggu') {
+                        matchStatus = item.disahkan === false;
+                    } else if (fStatus === 'Disahkan') {
+                        matchStatus = item.disahkan === true;
+                    }
+
+                    return matchPertandingan && matchStatus;
+                });
+
+                if (filtered.length === 0) {
+                    tbody.innerHTML = `<tr><td colspan="6" class="text-center py-4">Tiada rekod ditemui.</td></tr>`;
+                    return;
+                }
+
+                filtered.forEach(item => {
+                    const guru = item.karnival_guru;
+                    const sekolah = guru.karnival_sekolah;
+                    const muridStr = item.karnival_murid.map(m => `• ${m.nama} (${m.nokp})`).join('<br>');
+                    
+                    const link = item.pautan_hasil 
+                        ? `<a href="${item.pautan_hasil}" target="_blank" class="text-blue-500 hover:underline font-bold text-xs">Pautan</a>` 
+                        : `<span class="text-red-500 text-xs">Belum Hantar</span>`;
+
+                    const statusBadge = item.disahkan 
+                        ? `<span class="bg-green-100 text-green-800 text-xs font-semibold px-2 py-1 rounded">Disahkan</span>` 
+                        : `<span class="bg-yellow-100 text-yellow-800 text-xs font-semibold px-2 py-1 rounded">Belum</span>`;
+
+                    const btnSahkan = (!item.disahkan && item.pautan_hasil)
+                        ? `<button onclick="adminApp.sahkanPasukan('${item.id}')" class="bg-blue-600 hover:bg-blue-700 text-white text-xs px-3 py-1 rounded w-full mb-1">Sahkan Rekod</button>`
+                        : '';
+                    
+                    const btnBatal = item.disahkan
+                        ? `<button onclick="adminApp.batalPengesahan('${item.id}')" class="bg-gray-500 hover:bg-gray-600 text-white text-xs px-3 py-1 rounded w-full">Batal Pengesahan</button>`
+                        : '';
+
+                    const tr = document.createElement('tr');
+                    tr.className = "border-b border-gray-200 hover:bg-gray-100";
+                    tr.innerHTML = `
+                        <td class="py-3 px-3">
+                            <div class="font-bold">${sekolah.nama} (${sekolah.kod})</div>
+                            <div class="text-xs text-gray-500">Guru: ${guru.nama}</div>
+                            <div class="text-xs text-gray-500">No.Tel: ${guru.notel}</div>
+                        </td>
+                        <td class="py-3 px-3">
+                            <div class="font-bold text-indigo-700 mb-1">${item.nama_pasukan}</div>
+                            <div class="text-xs">${muridStr}</div>
+                        </td>
+                        <td class="py-3 px-3">
+                            <div class="font-bold text-xs mb-1">${guru.pertandingan}</div>
+                            <div class="text-xs bg-gray-200 inline-block px-1 rounded">${guru.kategori_pertandingan}</div>
+                        </td>
+                        <td class="py-3 px-3 text-center">
+                            ${link}
+                        </td>
+                        <td class="py-3 px-3 text-center">
+                            ${statusBadge}
+                        </td>
+                        <td class="py-3 px-3 text-center">
+                            ${btnSahkan}
+                            ${btnBatal}
+                        </td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+            },
+
+            sahkanPasukan: async (id) => {
+                if(!confirm("Anda pasti untuk mengesahkan penyertaan ini? Pengesahan membenarkan guru mencetak sijil.")) return;
+                
+                document.getElementById('loading_overlay').classList.remove('hidden');
+                const { error } = await supabase.from('karnival_pasukan').update({ disahkan: true }).eq('id', id);
+                if (error) {
+                    alert("Ralat mengemas kini rekod.");
+                    console.error(error);
+                }
+                await adminApp.loadSenarai();
+            },
+
+            batalPengesahan: async (id) => {
+                if(!confirm("Anda pasti untuk membatalkan pengesahan ini?")) return;
+                
+                document.getElementById('loading_overlay').classList.remove('hidden');
+                const { error } = await supabase.from('karnival_pasukan').update({ disahkan: false }).eq('id', id);
+                if (error) {
+                    alert("Ralat mengemas kini rekod.");
+                    console.error(error);
+                }
+                await adminApp.loadSenarai();
+            }
+        };
+    </script>
+</body>
+</html>
