@@ -3,265 +3,227 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Panel Urusetia - Karnival Pendidikan Madani</title>
-    <!-- Tailwind CSS -->
+    <title>Admin - eDaftar PPDAG</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Supabase JS -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
+    
+    <link href="https://cdn.jsdelivr.net/npm/tom-select@2.2.2/dist/css/tom-select.default.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/tom-select@2.2.2/dist/js/tom-select.complete.min.js"></script>
+
+    <link rel="stylesheet" href="admin.css">
 </head>
-<body class="bg-gray-100 min-h-screen font-sans text-gray-800">
+<body class="min-h-screen text-gray-800">
 
-    <div class="max-w-6xl mx-auto px-4 py-8">
-        
-        <header class="bg-white shadow-md rounded-lg p-6 mb-8 text-center flex items-center justify-center gap-4">
-            <img src="https://drive.google.com/thumbnail?id=1X_8tadWYrA77nEizDAVrJcuGVK5KLRvQ&sz=w800" alt="Logo" class="h-16 object-contain">
-            <div>
-                <h1 class="text-2xl font-bold text-gray-800">PANEL URUSETIA</h1>
-                <p class="text-gray-600 font-semibold">Karnival Pendidikan Madani PPD Alor Gajah 2026</p>
-            </div>
-        </header>
-
-        <main id="app_container" class="bg-white shadow-md rounded-lg p-6">
-            
-            <!-- VIEW: LOGIN -->
-            <section id="view_login">
-                <div class="max-w-md mx-auto py-8">
-                    <h2 class="text-xl font-bold border-b pb-2 mb-4 text-center">Log Masuk Admin</h2>
-                    <form id="form_login" onsubmit="adminApp.login(event)">
-                        <div class="mb-4">
-                            <label class="block text-gray-700 font-bold mb-2">Katalaluan:</label>
-                            <input type="password" id="admin_pwd" required class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Masukkan katalaluan...">
-                        </div>
-                        <button type="submit" class="w-full bg-blue-600 text-white font-bold py-2 px-4 rounded hover:bg-blue-700 transition">Log Masuk</button>
-                    </form>
-                    <div class="mt-4 text-center">
-                        <a href="index.html" class="text-sm text-blue-500 hover:underline">&larr; Kembali ke Laman Utama (Peserta)</a>
-                    </div>
-                </div>
-            </section>
-
-            <!-- VIEW: DASHBOARD -->
-            <section id="view_dashboard" class="hidden">
-                <div class="flex justify-between items-center border-b pb-2 mb-6">
-                    <h2 class="text-xl font-bold text-gray-800">Dashboard Semakan Penyertaan</h2>
-                    <div>
-                        <button onclick="adminApp.loadSenarai()" class="text-blue-600 text-sm hover:underline mr-4">🔄 Muat Semula Data</button>
-                        <button onclick="adminApp.logout()" class="text-red-500 text-sm hover:underline">Keluar</button>
-                    </div>
-                </div>
-
-                <!-- Filters -->
-                <div class="bg-gray-50 p-4 rounded-lg mb-6 border flex gap-4">
-                    <div class="w-1/2">
-                        <label class="block text-sm font-bold mb-1">Tapis Pertandingan:</label>
-                        <select id="filter_pertandingan" class="w-full px-2 py-1 border rounded" onchange="adminApp.renderTable()">
-                            <option value="Semua">Semua Pertandingan</option>
-                            <option value="Animasi AI">Pertandingan Video Animasi AI Kemerdekaan 2026</option>
-                            <option value="Mikrobotik">Pertandingan Robotik: Mikrobotik 2026</option>
-                        </select>
-                    </div>
-                    <div class="w-1/2">
-                        <label class="block text-sm font-bold mb-1">Tapis Status:</label>
-                        <select id="filter_status" class="w-full px-2 py-1 border rounded" onchange="adminApp.renderTable()">
-                            <option value="Semua">Semua Status</option>
-                            <option value="Menunggu">Menunggu Semakan / Belum Hantar</option>
-                            <option value="Disahkan">Telah Disahkan</option>
-                        </select>
-                    </div>
-                </div>
-
-                <!-- Senarai Penuh -->
-                <div class="overflow-x-auto">
-                    <table class="min-w-full bg-white border">
-                        <thead>
-                            <tr class="bg-gray-800 text-white text-sm leading-normal">
-                                <th class="py-3 px-3 text-left">Sekolah & Guru</th>
-                                <th class="py-3 px-3 text-left">Pasukan & Murid</th>
-                                <th class="py-3 px-3 text-left">Kategori & Pertandingan</th>
-                                <th class="py-3 px-3 text-left">Pautan / Fail</th>
-                                <th class="py-3 px-3 text-center">Status Sijil</th>
-                                <th class="py-3 px-3 text-center">Tindakan</th>
-                            </tr>
-                        </thead>
-                        <tbody id="table_body" class="text-gray-600 text-sm font-light">
-                            <!-- Rows akan dimasukkan melalui JS -->
-                        </tbody>
-                    </table>
-                </div>
-            </section>
-
-        </main>
-    </div>
-
-    <!-- Loading Overlay -->
-    <div id="loading_overlay" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden flex items-center justify-center">
-        <div class="bg-white p-6 rounded-lg shadow-lg text-center">
-            <div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 mb-4"></div>
-            <p class="font-bold">Memuatkan rekod...</p>
+    <div id="msg-modal" class="fixed inset-0 modal-bg flex items-center justify-center z-50 hidden-view px-4">
+        <div class="bg-white rounded-xl shadow-xl w-full max-w-sm p-6 transform transition-all">
+            <h3 id="msg-title" class="text-lg font-bold text-gray-900 mb-2">Makluman</h3>
+            <p id="msg-body" class="text-gray-600 mb-6"></p>
+            <button onclick="closeMsg()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 rounded-lg transition-colors">Tutup</button>
         </div>
     </div>
 
-    <script>
-        // Supabase Constants
-        const SUPABASE_URL = "https://app.tech4ag.my";
-        const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYW5vbiIsImlzcyI6InN1cGFiYXNlIiwiaWF0IjoxNzYzMzczNjQ1LCJleHAiOjIwNzg3MzM2NDV9.vZOedqJzUn01PjwfaQp7VvRzSm4aRMr21QblPDK8AoY";
-        const supabaseClientAdmin = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    <div id="delete-modal" class="fixed inset-0 modal-bg flex items-center justify-center z-50 hidden-view px-4">
+        <div class="bg-white rounded-xl shadow-xl w-full max-w-sm p-6 transform transition-all text-center">
+            <div class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-100 mb-4">
+                <svg class="h-6 w-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+            </div>
+            <h3 class="text-lg font-bold text-gray-900 mb-2">Sahkan Padam</h3>
+            <p class="text-gray-600 mb-6 text-sm">Adakah anda pasti mahu memadam rekod ini? Tindakan ini tidak boleh diundur.</p>
+            <div class="flex gap-3">
+                <button onclick="closeDelete()" class="w-1/2 bg-gray-200 hover:bg-gray-300 text-gray-800 font-medium py-2 rounded-lg transition-colors">Batal</button>
+                <button onclick="confirmDelete()" class="w-1/2 bg-red-600 hover:bg-red-700 text-white font-medium py-2 rounded-lg transition-colors">Padam</button>
+            </div>
+        </div>
+    </div>
 
-        const adminApp = {
-            dataPasukan: [],
+    <div id="edit-modal" class="fixed inset-0 modal-bg flex items-center justify-center z-50 hidden-view px-4">
+        <div class="bg-white rounded-xl shadow-xl w-full max-w-lg p-6 transform transition-all">
+            <h3 class="text-lg font-bold text-gray-900 mb-4 border-b pb-2">Kemaskini Rekod</h3>
+            <form id="edit-form" class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Nama Penuh</label>
+                    <input type="text" id="edit_nama" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 uppercase">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">No. Kad Pengenalan</label>
+                    <input type="text" id="edit_ic" required pattern="[0-9]+" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 bg-gray-50" readonly title="No KP tidak boleh diubah untuk elak ralat integrasi.">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Peranan</label>
+                    <select id="edit_peranan" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                        <option value="GURU">GURU</option>
+                        <option value="PEGAWAI">PEGAWAI</option>
+                        <option value="JURULATIH">JURULATIH</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Subjek</label>
+                    <select id="edit_subjek" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                        <option value="">-- Tiada / Pilih Subjek --</option>
+                        <option value="MATEMATIK (SR)">MATEMATIK (SR)</option>
+                        <option value="SAINS (SR)">SAINS (SR)</option>
+                        <option value="MATEMATIK (SM)">MATEMATIK (SM)</option>
+                        <option value="SAINS KOMPUTER (SM)">SAINS KOMPUTER (SM)</option>
+                        <option value="SAINS (SM)">SAINS (SM)</option>
+                        <option value="SAINS TULEN (SM)">SAINS TULEN (SM)</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Sekolah</label>
+                    <select id="edit_sekolah" required class="w-full border-gray-300 rounded-lg">
+                        <option value="">-- Memuatkan Sekolah... --</option>
+                    </select>
+                </div>
+                <div class="flex gap-3 pt-2">
+                    <button type="button" onclick="closeEdit()" class="w-1/3 bg-gray-200 hover:bg-gray-300 text-gray-800 font-medium py-2 rounded-lg transition-colors">Batal</button>
+                    <button type="submit" id="btn-save-edit" class="w-2/3 bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 rounded-lg transition-colors">Simpan Perubahan</button>
+                </div>
+            </form>
+        </div>
+    </div>
 
-            login: (e) => {
-                e.preventDefault();
-                const pwd = document.getElementById('admin_pwd').value;
-                if (pwd === 'ppdag@12345') {
-                    document.getElementById('view_login').classList.add('hidden');
-                    document.getElementById('view_dashboard').classList.remove('hidden');
-                    adminApp.loadSenarai();
-                } else {
-                    alert('Katalaluan Salah!');
-                }
-            },
+    <div id="modal-sekolah-tiada" class="fixed inset-0 modal-bg flex items-center justify-center z-50 hidden-view px-4">
+        <div class="bg-white rounded-xl shadow-xl w-full max-w-2xl p-6 transform transition-all flex flex-col max-h-[90vh]">
+            <h3 class="text-lg font-bold text-gray-900 mb-2 border-b pb-2">Semakan Sekolah Tiada Wakil</h3>
+            <div class="mb-4">
+                <p id="kategori-sekolah-label" class="text-sm font-semibold text-blue-600 uppercase"></p>
+                <p id="jumlah-sekolah-tiada" class="text-xs text-gray-500 mt-1"></p>
+            </div>
+            <div class="overflow-y-auto flex-1 border rounded bg-gray-50 p-2">
+                <ul id="senarai-sekolah-tiada" class="text-sm text-gray-700 divide-y divide-gray-200">
+                </ul>
+            </div>
+            <div class="mt-4 pt-4 border-t flex justify-end">
+                <button onclick="tutupModalSemakSekolah()" class="bg-gray-200 hover:bg-gray-300 text-gray-800 font-medium py-2 px-6 rounded-lg transition-colors">Tutup</button>
+            </div>
+        </div>
+    </div>
 
-            logout: () => {
-                document.getElementById('view_dashboard').classList.add('hidden');
-                document.getElementById('view_login').classList.remove('hidden');
-                document.getElementById('admin_pwd').value = '';
-                adminApp.dataPasukan = [];
-            },
+    <div id="modal-kuota-sekolah" class="fixed inset-0 modal-bg flex items-center justify-center z-50 hidden-view px-4">
+        <div class="bg-white rounded-xl shadow-xl w-full max-w-2xl p-6 transform transition-all flex flex-col max-h-[90vh]">
+            <h3 class="text-lg font-bold text-gray-900 mb-2 border-b pb-2">Semakan Kuota Sekolah (SM)</h3>
+            <div class="mb-4">
+                <p id="kategori-kuota-label" class="text-sm font-semibold text-blue-600 uppercase"></p>
+                <p id="jumlah-kuota-sekolah" class="text-xs text-gray-500 mt-1"></p>
+            </div>
+            <div class="overflow-y-auto flex-1 border rounded bg-gray-50 p-2">
+                <ul id="senarai-kuota-sekolah" class="text-sm text-gray-700 divide-y divide-gray-200">
+                </ul>
+            </div>
+            <div class="mt-4 pt-4 border-t flex justify-end">
+                <button onclick="tutupModalSemakKuota()" class="bg-gray-200 hover:bg-gray-300 text-gray-800 font-medium py-2 px-6 rounded-lg transition-colors">Tutup</button>
+            </div>
+        </div>
+    </div>
 
-            loadSenarai: async () => {
-                document.getElementById('loading_overlay').classList.remove('hidden');
-                
-                try {
-                    // Fetch data menggunakan Relational Queries Supabase
-                    const { data, error } = await supabaseClientAdmin
-                        .from('karnival_pasukan')
-                        .select(`
-                            id, nama_pasukan, pautan_hasil, disahkan, created_at,
-                            karnival_guru ( id, nama, notel, pertandingan, kategori_pertandingan, karnival_sekolah (kod, nama) ),
-                            karnival_murid ( nama, nokp )
-                        `)
-                        .order('created_at', { ascending: false });
+    <div id="login-view" class="min-h-screen flex flex-col items-center justify-center p-4">
+        <div class="mb-6 text-center">
+            <img src="ikonppd.png" alt="Logo PPDAG" class="h-32 mx-auto mb-2" onerror="this.style.display='none'">
+        </div>
+        <div class="bg-white rounded-xl shadow-lg w-full max-w-md overflow-hidden border border-gray-100">
+            <div class="bg-slate-800 px-6 py-5 text-center">
+                <h1 class="text-2xl font-bold text-white">Log Masuk Admin</h1>
+                <p class="text-slate-300 text-sm mt-1">Sistem eDaftar PPDAG</p>
+            </div>
+            <div class="p-6 md:p-8">
+                <form id="login-form" class="space-y-5">
+                    <div>
+                        <label for="admin_pwd" class="block text-sm font-medium text-gray-700 mb-1">Kata Laluan</label>
+                        <input type="password" id="admin_pwd" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                    </div>
+                    <button type="submit" class="w-full bg-slate-800 hover:bg-slate-900 text-white font-medium py-2.5 px-4 rounded-lg transition-colors">Log Masuk</button>
+                    <p id="login-error" class="text-red-500 text-sm text-center hidden-view">Kata laluan salah.</p>
+                </form>
+            </div>
+        </div>
+        <a href="index.html" class="mt-6 text-slate-500 hover:text-slate-700 text-sm font-medium underline transition-colors">← Kembali ke Utama</a>
+    </div>
 
-                    if (error) throw error;
-                    
-                    adminApp.dataPasukan = data;
-                    adminApp.renderTable();
-                } catch (error) {
-                    console.error("Ralat memuat senarai:", error);
-                    alert("Ralat memuat turun data.");
-                } finally {
-                    document.getElementById('loading_overlay').classList.add('hidden');
-                }
-            },
+    <div id="dashboard-view" class="hidden-view bg-gray-50 min-h-screen">
+        <nav class="bg-slate-800 text-white shadow-md sticky top-0 z-40">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="flex items-center justify-between h-16">
+                    <div class="flex items-center gap-3">
+                        <img src="ikonppd.png" alt="Logo PPDAG" class="h-10 w-10" onerror="this.style.display='none'">
+                        <span class="font-bold text-lg md:text-xl hidden sm:block">Admin eDaftar PPDAG</span>
+                    </div>
+                    <div class="flex items-center gap-4">
+                        <a href="index.html" class="text-slate-300 hover:text-white text-sm font-medium transition-colors hidden sm:block">Utama</a>
+                        <button id="btn-logout" class="bg-slate-700 hover:bg-slate-600 px-4 py-2 rounded text-sm font-medium transition-colors border border-slate-600">Log Keluar</button>
+                    </div>
+                </div>
+            </div>
+        </nav>
 
-            renderTable: () => {
-                const fPertandingan = document.getElementById('filter_pertandingan').value;
-                const fStatus = document.getElementById('filter_status').value;
-                const tbody = document.getElementById('table_body');
-                
-                tbody.innerHTML = '';
+        <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            <div class="bg-white shadow-sm rounded-xl p-6 border border-gray-200">
+                <div class="flex flex-col md:flex-row justify-between items-start md:items-end gap-4 mb-6">
+                    <div class="w-full md:w-1/2">
+                        <label for="filter_subjek" class="block text-sm font-medium text-gray-700 mb-1">Saring Mengikut Kumpulan</label>
+                        <select id="filter_subjek" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-slate-500 bg-gray-50">
+                            <option value="">-- Sila Pilih Kumpulan --</option>
+                            <option value="G1">MATEMATIK (SR) - 20 & 21 Julai 2026</option>
+                            <option value="G2">SAINS (SR) - 22 & 23 Julai 2026</option>
+                            <option value="G3">MATEMATIK & SAINS KOMPUTER (SM) - 10 & 11 Ogos 2026</option>
+                            <option value="G4">SAINS & SAINS TULEN (SM) - 12 & 13 Ogos 2026</option>
+                        </select>
+                    </div>
+                    <div class="flex gap-3 w-full md:w-auto flex-wrap">
+                        <button id="btn-cari" class="flex-1 md:flex-none bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg font-medium shadow-sm transition-colors">Papar</button>
+                        <button id="btn-pdf" class="flex-1 md:flex-none bg-red-600 hover:bg-red-700 text-white px-6 py-2 rounded-lg font-medium shadow-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed" disabled>PDF Kehadiran</button>
+                        <button id="btn-sijil-pukal" class="flex-1 md:flex-none bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-2 rounded-lg font-medium shadow-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed" disabled>Muat Turun Sijil</button>
+                        <button id="btn-semak-sekolah" onclick="bukaModalSemakSekolah()" class="flex-1 md:flex-none bg-yellow-500 hover:bg-yellow-600 text-white px-6 py-2 rounded-lg font-medium shadow-sm transition-colors hidden-view">Semak Sekolah Tiada Wakil</button>
+                        <button id="btn-semak-kuota" onclick="bukaModalSemakKuota()" class="flex-1 md:flex-none bg-orange-500 hover:bg-orange-600 text-white px-6 py-2 rounded-lg font-medium shadow-sm transition-colors hidden-view">Semak Kuota Sekolah</button>
+                        <button id="btn-pukal-hadir-1" class="flex-1 md:flex-none bg-emerald-600 hover:bg-emerald-700 text-white px-6 py-2 rounded-lg font-medium shadow-sm transition-colors hidden-view">Hadir Semua Sesi 1</button>
+                        <button id="btn-pukal-hadir-2" class="flex-1 md:flex-none bg-emerald-600 hover:bg-emerald-700 text-white px-6 py-2 rounded-lg font-medium shadow-sm transition-colors hidden-view">Hadir Semua Sesi 2</button>
+                        <button id="btn-pukal-tak-hadir-1" class="flex-1 md:flex-none bg-red-600 hover:bg-red-700 text-white px-6 py-2 rounded-lg font-medium shadow-sm transition-colors hidden-view">Tidak Hadir Semua Sesi 1</button>
+                        <button id="btn-pukal-tak-hadir-2" class="flex-1 md:flex-none bg-red-600 hover:bg-red-700 text-white px-6 py-2 rounded-lg font-medium shadow-sm transition-colors hidden-view">Tidak Hadir Semua Sesi 2</button>
+                    </div>
+                </div>
 
-                let filtered = adminApp.dataPasukan.filter(item => {
-                    const guru = item.karnival_guru;
-                    if (!guru) return false;
+                <div id="summary-cards" class="grid grid-cols-3 gap-4 mb-6 hidden-view">
+                    <div id="kad-pegawai" onclick="tapisSenarai('PEGAWAI')" class="bg-indigo-50 border border-indigo-100 p-4 rounded-lg text-center cursor-pointer hover:bg-indigo-100 hover:shadow-md transition-all ring-offset-2">
+                        <p class="text-xs font-semibold text-indigo-600 uppercase">Pegawai</p>
+                        <h4 id="sum_pegawai" class="text-2xl font-bold text-indigo-900 mt-1">0 / 10</h4>
+                        <p class="text-[10px] text-indigo-500 mt-1 opacity-75">Klik untuk papar</p>
+                    </div>
+                    <div id="kad-jurulatih" onclick="tapisSenarai('JURULATIH')" class="bg-teal-50 border border-teal-100 p-4 rounded-lg text-center cursor-pointer hover:bg-teal-100 hover:shadow-md transition-all ring-offset-2">
+                        <p class="text-xs font-semibold text-teal-600 uppercase">Jurulatih</p>
+                        <h4 id="sum_jurulatih" class="text-2xl font-bold text-teal-900 mt-1">0 / 9</h4>
+                        <p class="text-[10px] text-teal-500 mt-1 opacity-75">Klik untuk papar</p>
+                    </div>
+                    <div id="kad-guru" onclick="tapisSenarai('GURU')" class="bg-blue-50 border border-blue-100 p-4 rounded-lg text-center cursor-pointer hover:bg-blue-100 hover:shadow-md transition-all ring-offset-2">
+                        <p class="text-xs font-semibold text-blue-600 uppercase">Guru (Subjek)</p>
+                        <h4 id="sum_guru" class="text-2xl font-bold text-blue-900 mt-1">0</h4>
+                        <p class="text-[10px] text-blue-500 mt-1 opacity-75">Klik untuk papar</p>
+                    </div>
+                </div>
 
-                    let matchPertandingan = true;
-                    if (fPertandingan !== 'Semua') {
-                        matchPertandingan = guru.pertandingan === fPertandingan;
-                    }
+                <div class="overflow-x-auto border rounded-lg bg-white">
+                    <table class="min-w-full divide-y divide-gray-200 table-fixed">
+                        <thead class="bg-slate-50">
+                            <tr>
+                                <th scope="col" class="w-10 px-4 py-3 text-center"><input type="checkbox" id="check-all-cert" class="rounded text-blue-600 focus:ring-blue-500 disabled:opacity-50" disabled></th>
+                                <th scope="col" class="w-12 px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Bil</th>
+                                <th scope="col" class="w-[35%] min-w-[250px] px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Maklumat Peserta</th>
+                                <th scope="col" class="w-[35%] min-w-[250px] px-4 py-3 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">Sekolah</th>
+                                <th scope="col" class="w-32 px-4 py-3 text-center text-xs font-semibold text-slate-600 uppercase tracking-wider whitespace-nowrap">Status Kehadiran</th>
+                                <th scope="col" class="w-32 px-4 py-3 text-right text-xs font-semibold text-slate-600 uppercase tracking-wider whitespace-nowrap">Tindakan</th>
+                            </tr>
+                        </thead>
+                        <tbody id="table-body" class="bg-white divide-y divide-gray-200">
+                            <tr>
+                                <td colspan="6" class="px-6 py-12 text-center text-sm text-gray-500">Sila pilih kumpulan subjek dan klik "Papar".</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </main>
+    </div>
 
-                    let matchStatus = true;
-                    if (fStatus === 'Menunggu') {
-                        matchStatus = item.disahkan === false;
-                    } else if (fStatus === 'Disahkan') {
-                        matchStatus = item.disahkan === true;
-                    }
-
-                    return matchPertandingan && matchStatus;
-                });
-
-                if (filtered.length === 0) {
-                    tbody.innerHTML = `<tr><td colspan="6" class="text-center py-4">Tiada rekod ditemui.</td></tr>`;
-                    return;
-                }
-
-                filtered.forEach(item => {
-                    const guru = item.karnival_guru;
-                    const sekolah = guru.karnival_sekolah;
-                    const muridStr = item.karnival_murid.map(m => `• ${m.nama} (${m.nokp})`).join('<br>');
-                    
-                    const link = item.pautan_hasil 
-                        ? `<a href="${item.pautan_hasil}" target="_blank" class="text-blue-500 hover:underline font-bold text-xs">Pautan</a>` 
-                        : `<span class="text-red-500 text-xs">Belum Hantar</span>`;
-
-                    const statusBadge = item.disahkan 
-                        ? `<span class="bg-green-100 text-green-800 text-xs font-semibold px-2 py-1 rounded">Disahkan</span>` 
-                        : `<span class="bg-yellow-100 text-yellow-800 text-xs font-semibold px-2 py-1 rounded">Belum</span>`;
-
-                    const btnSahkan = (!item.disahkan && item.pautan_hasil)
-                        ? `<button onclick="adminApp.sahkanPasukan('${item.id}')" class="bg-blue-600 hover:bg-blue-700 text-white text-xs px-3 py-1 rounded w-full mb-1">Sahkan Rekod</button>`
-                        : '';
-                    
-                    const btnBatal = item.disahkan
-                        ? `<button onclick="adminApp.batalPengesahan('${item.id}')" class="bg-gray-500 hover:bg-gray-600 text-white text-xs px-3 py-1 rounded w-full">Batal Pengesahan</button>`
-                        : '';
-
-                    const tr = document.createElement('tr');
-                    tr.className = "border-b border-gray-200 hover:bg-gray-100";
-                    tr.innerHTML = `
-                        <td class="py-3 px-3">
-                            <div class="font-bold">${sekolah.nama} (${sekolah.kod})</div>
-                            <div class="text-xs text-gray-500">Guru: ${guru.nama}</div>
-                            <div class="text-xs text-gray-500">No.Tel: ${guru.notel}</div>
-                        </td>
-                        <td class="py-3 px-3">
-                            <div class="font-bold text-indigo-700 mb-1">${item.nama_pasukan}</div>
-                            <div class="text-xs">${muridStr}</div>
-                        </td>
-                        <td class="py-3 px-3">
-                            <div class="font-bold text-xs mb-1">${guru.pertandingan}</div>
-                            <div class="text-xs bg-gray-200 inline-block px-1 rounded">${guru.kategori_pertandingan}</div>
-                        </td>
-                        <td class="py-3 px-3 text-center">
-                            ${link}
-                        </td>
-                        <td class="py-3 px-3 text-center">
-                            ${statusBadge}
-                        </td>
-                        <td class="py-3 px-3 text-center">
-                            ${btnSahkan}
-                            ${btnBatal}
-                        </td>
-                    `;
-                    tbody.appendChild(tr);
-                });
-            },
-
-            sahkanPasukan: async (id) => {
-                if(!confirm("Anda pasti untuk mengesahkan penyertaan ini? Pengesahan membenarkan guru mencetak sijil.")) return;
-                
-                document.getElementById('loading_overlay').classList.remove('hidden');
-                const { error } = await supabaseClientAdmin.from('karnival_pasukan').update({ disahkan: true }).eq('id', id);
-                if (error) {
-                    alert("Ralat mengemas kini rekod.");
-                    console.error(error);
-                }
-                await adminApp.loadSenarai();
-            },
-
-            batalPengesahan: async (id) => {
-                if(!confirm("Anda pasti untuk membatalkan pengesahan ini?")) return;
-                
-                document.getElementById('loading_overlay').classList.remove('hidden');
-                const { error } = await supabaseClientAdmin.from('karnival_pasukan').update({ disahkan: false }).eq('id', id);
-                if (error) {
-                    alert("Ralat mengemas kini rekod.");
-                    console.error(error);
-                }
-                await adminApp.loadSenarai();
-            }
-        };
-    </script>
+    <script src="admin.js"></script>
 </body>
 </html>
