@@ -26,7 +26,7 @@ const db = {
                 .from('karnival_guru')
                 .insert([guruData])
                 .select()
-                .single();
+                .maybeSingle();
             
             if (error) throw error;
             return { success: true, data };
@@ -45,10 +45,10 @@ const db = {
                 .eq('sekolah_id', sekolah_id)
                 .eq('nokp', nokp)
                 .eq('pertandingan', pertandingan)
-                .single();
+                .maybeSingle();
             
-            if (error && error.code !== 'PGRST116') throw error; // PGRST116: No rows found
-            return { success: true, data: data || null };
+            if (error) throw error; 
+            return { success: true, data: data }; // data akan jadi null jika tiada rekod
         } catch (error) {
             console.error("Ralat semakGuruExist:", error);
             return { success: false, error: error.message };
