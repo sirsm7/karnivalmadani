@@ -44,7 +44,7 @@ async function initApp() {
             select.appendChild(opt);
         });
     } else {
-        alert("Gagal memuat turun maklumat sekolah. Sila muat semula halaman.");
+        Swal.fire('Ralat', 'Gagal memuat turun maklumat sekolah. Sila muat semula halaman.', 'error');
     }
 }
 
@@ -52,7 +52,7 @@ async function initApp() {
 document.getElementById('btn_seterusnya_sekolah').addEventListener('click', () => {
     const select = document.getElementById('select_sekolah');
     if (!select.value) {
-        alert("Sila pilih sekolah terlebih dahulu.");
+        Swal.fire('Peringatan', 'Sila pilih sekolah terlebih dahulu.', 'warning');
         return;
     }
     appState.sekolah = JSON.parse(select.value);
@@ -127,7 +127,7 @@ const app = {
         const nokp = document.getElementById('login_nokp').value.trim();
 
         if (!nokp) {
-            alert("Sila masukkan No. Kad Pengenalan.");
+            Swal.fire('Peringatan', 'Sila masukkan No. Kad Pengenalan.', 'warning');
             return;
         }
 
@@ -141,7 +141,7 @@ const app = {
             appState.guru = semakRes.data;
             app.bukaDashboard();
         } else {
-            alert("Tiada rekod pendaftaran ditemui untuk No. KP ini bagi sekolah dan pertandingan yang dipilih. Sila isi borang DAFTAR BARU di bawah.");
+            Swal.fire('Maklumat', 'Tiada rekod pendaftaran ditemui untuk No. KP ini bagi sekolah dan pertandingan yang dipilih. Sila isi borang DAFTAR BARU di bawah.', 'info');
             document.getElementById('guru_nokp').value = nokp; // Pindahkan ke form daftar baru
             document.getElementById('guru_nama').focus();
         }
@@ -157,7 +157,7 @@ const app = {
         const kategori = document.getElementById('guru_kategori').value;
 
         if (!app.semakEmelDelima(emel)) {
-            alert("Ralat: Sila gunakan alamat emel DELIMa yang sah (@moe-dl.edu.my).");
+            Swal.fire('Ralat', 'Sila gunakan alamat emel DELIMa yang sah (@moe-dl.edu.my).', 'error');
             return;
         }
 
@@ -168,7 +168,7 @@ const app = {
         if (semakRes.success && semakRes.data) {
             appState.guru = semakRes.data;
             hideLoading();
-            alert("Anda telah didaftarkan sebelum ini. Membuka dashboard pengurusan pasukan anda...");
+            Swal.fire('Maklumat', 'Anda telah didaftarkan sebelum ini. Membuka dashboard pengurusan pasukan anda...', 'info');
             app.bukaDashboard();
         } else {
             const guruData = {
@@ -189,18 +189,27 @@ const app = {
                 appState.guru = insertRes.data;
                 app.bukaDashboard();
             } else {
-                alert("Ralat mendaftar guru: " + insertRes.error);
+                Swal.fire('Ralat', 'Ralat mendaftar guru: ' + insertRes.error, 'error');
             }
         }
     },
 
-    logoutGuru: () => {
-        if(confirm("Adakah anda pasti untuk keluar log?")) {
+    logoutGuru: async () => {
+        const result = await Swal.fire({
+            title: 'Keluar Log?',
+            text: 'Adakah anda pasti untuk keluar log?',
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonText: 'Ya, Keluar',
+            cancelButtonText: 'Batal'
+        });
+
+        if (result.isConfirmed) {
             appState.guru = null;
             appState.pasukanList = [];
             document.getElementById('form_guru').reset();
             const loginInput = document.getElementById('login_nokp');
-            if(loginInput) loginInput.value = '';
+            if (loginInput) loginInput.value = '';
             
             viewDashboardGuru.classList.add('hidden');
             viewDaftarGuru.classList.remove('hidden');
@@ -249,13 +258,13 @@ const app = {
 
             app.renderPasukanList();
         } else {
-            alert("Ralat memuatkan senarai pasukan: " + res.error);
+            Swal.fire('Ralat', 'Ralat memuatkan senarai pasukan: ' + res.error, 'error');
         }
     },
 
     bukaBorangPasukan: () => {
         if (appState.pasukanList.length >= 10) {
-            alert("Maksimum 10 pasukan dibenarkan untuk satu akaun guru.");
+            Swal.fire('Had Dicapai', 'Maksimum 10 pasukan dibenarkan untuk satu akaun guru.', 'warning');
             return;
         }
         document.getElementById('form_pasukan').reset();
@@ -276,7 +285,7 @@ const app = {
         const m2_emel = document.getElementById('murid2_emel').value.trim().toLowerCase();
 
         if (!app.semakEmelDelima(m1_emel) || !app.semakEmelDelima(m2_emel)) {
-            alert("Ralat: Sila gunakan alamat emel DELIMa yang sah (@moe-dl.edu.my) untuk kedua-dua murid.");
+            Swal.fire('Ralat', 'Sila gunakan alamat emel DELIMa yang sah (@moe-dl.edu.my) untuk kedua-dua murid.', 'error');
             return;
         }
 
@@ -297,11 +306,11 @@ const app = {
         hideLoading();
 
         if (res.success) {
-            alert("Pasukan berjaya didaftarkan!");
+            Swal.fire('Berjaya', 'Pasukan berjaya didaftarkan!', 'success');
             app.tutupBorangPasukan();
             app.loadPasukanList();
         } else {
-            alert("Ralat mendaftar pasukan: " + res.error);
+            Swal.fire('Ralat', 'Ralat mendaftar pasukan: ' + res.error, 'error');
         }
     },
 
@@ -382,7 +391,7 @@ const app = {
     simpanLinkAnimasi: async (pasukan_id) => {
         const pautan = document.getElementById(`link_${pasukan_id}`).value.trim();
         if (!pautan || !pautan.startsWith('http')) {
-            alert("Sila masukkan pautan URL yang sah (bermula dengan http/https).");
+            Swal.fire('Ralat', 'Sila masukkan pautan URL yang sah (bermula dengan http/https).', 'error');
             return;
         }
 
@@ -391,17 +400,17 @@ const app = {
         hideLoading();
 
         if (res.success) {
-            alert("Pautan YouTube berjaya disimpan.");
+            Swal.fire('Berjaya', 'Pautan YouTube berjaya disimpan.', 'success');
             app.loadPasukanList();
         } else {
-            alert("Ralat menyimpan pautan: " + res.error);
+            Swal.fire('Ralat', 'Ralat menyimpan pautan: ' + res.error, 'error');
         }
     },
 
     uploadFailMikrobotik: async (pasukan_id, nama_pasukan) => {
         const fileInput = document.getElementById(`file_${pasukan_id}`);
         if (!fileInput.files || fileInput.files.length === 0) {
-            alert("Sila pilih fail untuk dimuat naik.");
+            Swal.fire('Peringatan', 'Sila pilih fail untuk dimuat naik.', 'warning');
             return;
         }
 
@@ -420,22 +429,22 @@ const app = {
                 hideLoading();
 
                 if (dbRes.success) {
-                    alert("Fail berjaya dimuat naik dan direkodkan!");
+                    Swal.fire('Berjaya', 'Fail berjaya dimuat naik dan direkodkan!', 'success');
                     app.loadPasukanList();
                 } else {
-                    alert("Fail telah dimuat naik, tetapi ralat merekod pautan ke pangkalan data: " + dbRes.error);
+                    Swal.fire('Ralat Sebahagian', 'Fail telah dimuat naik, tetapi ralat merekod pautan ke pangkalan data: ' + dbRes.error, 'warning');
                 }
 
             } else {
                 hideLoading();
-                alert("Ralat memuat naik fail: " + gasRes.error);
+                Swal.fire('Ralat', 'Ralat memuat naik fail: ' + gasRes.error, 'error');
             }
         };
 
         reader.readAsDataURL(file);
     },
 
-    janaSijilPDF: (pasukan_id) => {
+    janaSijilPDF: async (pasukan_id) => {
         const pasukan = appState.pasukanList.find(p => p.id === pasukan_id);
         if (!pasukan) return;
 
@@ -444,27 +453,23 @@ const app = {
         try {
             const { jsPDF } = window.jspdf;
             
+            // Menggunakan orientasi Portrait dan format A4
             const doc = new jsPDF({
-                orientation: 'landscape',
-                unit: 'mm',
+                orientation: 'portrait',
                 format: 'a4'
             });
 
-            const lebarA4 = 297;
-            const tinggiA4 = 210;
+            // Dimensi A4 Portrait (Lebar: 210mm, Tinggi: 297mm)
+            const lebarA4 = 210;
+            const tinggiA4 = 297;
 
             const generateHalamanSijil = (nama, role) => {
-                doc.setDrawColor(30, 64, 175);
-                doc.setLineWidth(5);
-                doc.rect(10, 10, lebarA4 - 20, tinggiA4 - 20);
-                
-                doc.setDrawColor(234, 179, 8);
-                doc.setLineWidth(1);
-                doc.rect(12, 12, lebarA4 - 24, tinggiA4 - 24);
+                // Tiada lagi doc.rect() untuk background/border
 
+                // Kedudukan Y diselaraskan untuk A4 Portrait
                 if (appState.imgLogoBase64) {
                     try {
-                        doc.addImage(appState.imgLogoBase64, 'PNG', lebarA4/2 - 20, 20, 40, 40);
+                        doc.addImage(appState.imgLogoBase64, 'PNG', lebarA4/2 - 20, 30, 40, 40);
                     } catch (e) {
                         console.warn("Gagal melukis logo di PDF", e);
                     }
@@ -473,52 +478,60 @@ const app = {
                 doc.setFont("helvetica", "bold");
                 doc.setFontSize(28);
                 doc.setTextColor(30, 64, 175);
-                doc.text("SIJIL PENYERTAAN", lebarA4/2, 75, { align: "center" });
+                doc.text("SIJIL PENYERTAAN", lebarA4/2, 90, { align: "center" });
 
                 doc.setFont("helvetica", "normal");
                 doc.setFontSize(14);
                 doc.setTextColor(50, 50, 50);
-                doc.text("Dengan ini disahkan bahawa", lebarA4/2, 90, { align: "center" });
+                doc.text("Dengan ini disahkan bahawa", lebarA4/2, 105, { align: "center" });
 
                 doc.setFont("helvetica", "bold");
                 doc.setFontSize(22);
                 doc.setTextColor(0, 0, 0);
-                doc.text(nama.toUpperCase(), lebarA4/2, 105, { align: "center" });
+                doc.text(nama.toUpperCase(), lebarA4/2, 120, { align: "center" });
 
                 doc.setFont("helvetica", "normal");
                 doc.setFontSize(14);
-                doc.text(`Telah menyertai sebagai ${role} mewakili`, lebarA4/2, 120, { align: "center" });
+                doc.text(`Telah menyertai sebagai ${role} mewakili`, lebarA4/2, 135, { align: "center" });
                 
                 doc.setFont("helvetica", "bold");
                 doc.setFontSize(16);
-                doc.text(appState.sekolah.nama.toUpperCase(), lebarA4/2, 130, { align: "center" });
+                doc.text(appState.sekolah.nama.toUpperCase(), lebarA4/2, 145, { align: "center" });
 
                 doc.setFont("helvetica", "normal");
                 doc.setFontSize(14);
-                doc.text(`dalam`, lebarA4/2, 145, { align: "center" });
+                doc.text(`dalam`, lebarA4/2, 160, { align: "center" });
 
                 doc.setFont("helvetica", "bold");
                 doc.setFontSize(16);
                 doc.setTextColor(185, 28, 28);
                 let tajukPert = appState.pertandingan === 'Animasi AI' ? "Pertandingan Video Animasi AI Kemerdekaan 2026" : "Pertandingan Robotik: Mikrobotik 2026";
-                doc.text(tajukPert.toUpperCase(), lebarA4/2, 155, { align: "center" });
+                
+                // Pecahkan tajuk panjang kepada berbilang baris jika perlu
+                const splitTitle = doc.splitTextToSize(tajukPert.toUpperCase(), lebarA4 - 40);
+                doc.text(splitTitle, lebarA4/2, 170, { align: "center" });
+
+                // Kira kedudukan Y seterusnya berdasarkan bilangan baris tajuk
+                const nextY = 170 + (splitTitle.length * 8);
 
                 doc.setFont("helvetica", "normal");
                 doc.setFontSize(12);
                 doc.setTextColor(50, 50, 50);
-                doc.text(`Sempena Karnival Pendidikan Madani PPD Alor Gajah`, lebarA4/2, 165, { align: "center" });
+                const desc = `Sempena Karnival Pendidikan Madani PPD Alor Gajah`;
+                const splitDesc = doc.splitTextToSize(desc, lebarA4 - 40);
+                doc.text(splitDesc, lebarA4/2, nextY, { align: "center" });
 
                 if (appState.imgSignBase64) {
                     try {
-                        doc.addImage(appState.imgSignBase64, 'PNG', lebarA4/2 - 25, 170, 50, 20);
+                        doc.addImage(appState.imgSignBase64, 'PNG', lebarA4/2 - 25, 220, 50, 20);
                     } catch (e) {
                          console.warn("Gagal melukis tandatangan di PDF", e);
                     }
                 }
                 
                 doc.setFontSize(10);
-                doc.text("PEGAWAI PENDIDIKAN DAERAH", lebarA4/2, 195, { align: "center" });
-                doc.text("PEJABAT PENDIDIKAN DAERAH ALOR GAJAH", lebarA4/2, 200, { align: "center" });
+                doc.text("PEGAWAI PENDIDIKAN DAERAH", lebarA4/2, 245, { align: "center" });
+                doc.text("PEJABAT PENDIDIKAN DAERAH ALOR GAJAH", lebarA4/2, 250, { align: "center" });
             };
 
             generateHalamanSijil(appState.guru.nama, "GURU PEMBIMBING");
@@ -533,12 +546,32 @@ const app = {
                 generateHalamanSijil(pasukan.karnival_murid[1].nama, "PESERTA");
             }
 
-            doc.save(`Sijil_Penyertaan_${pasukan.nama_pasukan.replace(/\s+/g, '_')}.pdf`);
+            // Dapatkan URL blob untuk dipaparkan dalam iframe
+            const blobUrl = doc.output('bloburl');
             hideLoading();
+
+            // Paparkan Preview dalam SweetAlert2
+            const result = await Swal.fire({
+                title: 'Pratonton Sijil',
+                html: `<iframe src="${blobUrl}" style="width: 100%; height: 60vh; border: none;"></iframe>`,
+                width: '80%', // Jadikan modal lebih lebar untuk preview
+                showCancelButton: true,
+                confirmButtonText: 'Muat Turun PDF',
+                cancelButtonText: 'Tutup',
+                customClass: {
+                    popup: 'swal-wide' // Tambahan kelas CSS jika perlu (opsional)
+                }
+            });
+
+            // Jika pengguna klik "Muat Turun PDF"
+            if (result.isConfirmed) {
+                doc.save(`Sijil_Penyertaan_${pasukan.nama_pasukan.replace(/\s+/g, '_')}.pdf`);
+            }
+
         } catch (error) {
             console.error(error);
             hideLoading();
-            alert("Ralat semasa menjana sijil. Sila pastikan pelayar anda menyokong muat turun fail.");
+            Swal.fire('Ralat', 'Ralat semasa menjana sijil. Sila pastikan pelayar anda menyokong penjanaan fail.', 'error');
         }
     }
 };

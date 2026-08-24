@@ -8,6 +8,8 @@
     <link rel="icon" type="image/png" href="LogoPPDAG.png">
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
+    <!-- SweetAlert2 -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <!-- Supabase JS -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
@@ -120,7 +122,7 @@
                     document.getElementById('view_dashboard').classList.remove('hidden');
                     adminApp.loadSenarai();
                 } else {
-                    alert('Katalaluan Salah!');
+                    Swal.fire('Ralat', 'Katalaluan Salah!', 'error');
                 }
             },
 
@@ -151,7 +153,7 @@
                     adminApp.renderTable();
                 } catch (error) {
                     console.error("Ralat memuat senarai:", error);
-                    alert("Ralat memuat turun data.");
+                    Swal.fire('Ralat', 'Ralat memuat turun data.', 'error');
                 } finally {
                     document.getElementById('loading_overlay').classList.add('hidden');
                 }
@@ -241,27 +243,51 @@
             },
 
             sahkanPasukan: async (id) => {
-                if(!confirm("Anda pasti untuk mengesahkan penyertaan ini? Pengesahan membenarkan guru mencetak sijil.")) return;
-                
-                document.getElementById('loading_overlay').classList.remove('hidden');
-                const { error } = await supabaseClientAdmin.from('karnival_pasukan').update({ disahkan: true }).eq('id', id);
-                if (error) {
-                    alert("Ralat mengemas kini rekod.");
-                    console.error(error);
+                const result = await Swal.fire({
+                    title: 'Sahkan Penyertaan?',
+                    text: 'Pengesahan membenarkan guru mencetak sijil.',
+                    icon: 'question',
+                    showCancelButton: true,
+                    confirmButtonText: 'Ya, Sahkan',
+                    cancelButtonText: 'Batal'
+                });
+
+                if (result.isConfirmed) {
+                    document.getElementById('loading_overlay').classList.remove('hidden');
+                    const { error } = await supabaseClientAdmin.from('karnival_pasukan').update({ disahkan: true }).eq('id', id);
+                    if (error) {
+                        Swal.fire('Ralat', 'Ralat mengemas kini rekod.', 'error');
+                        console.error(error);
+                    } else {
+                        await adminApp.loadSenarai();
+                        Swal.fire('Berjaya', 'Penyertaan telah disahkan.', 'success');
+                    }
+                    document.getElementById('loading_overlay').classList.add('hidden');
                 }
-                await adminApp.loadSenarai();
             },
 
             batalPengesahan: async (id) => {
-                if(!confirm("Anda pasti untuk membatalkan pengesahan ini?")) return;
-                
-                document.getElementById('loading_overlay').classList.remove('hidden');
-                const { error } = await supabaseClientAdmin.from('karnival_pasukan').update({ disahkan: false }).eq('id', id);
-                if (error) {
-                    alert("Ralat mengemas kini rekod.");
-                    console.error(error);
+                const result = await Swal.fire({
+                    title: 'Batal Pengesahan?',
+                    text: 'Anda pasti untuk membatalkan pengesahan ini?',
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonText: 'Ya, Batal',
+                    cancelButtonText: 'Kembali'
+                });
+
+                if (result.isConfirmed) {
+                    document.getElementById('loading_overlay').classList.remove('hidden');
+                    const { error } = await supabaseClientAdmin.from('karnival_pasukan').update({ disahkan: false }).eq('id', id);
+                    if (error) {
+                        Swal.fire('Ralat', 'Ralat mengemas kini rekod.', 'error');
+                        console.error(error);
+                    } else {
+                        await adminApp.loadSenarai();
+                        Swal.fire('Berjaya', 'Pengesahan telah dibatalkan.', 'success');
+                    }
+                    document.getElementById('loading_overlay').classList.add('hidden');
                 }
-                await adminApp.loadSenarai();
             }
         };
     </script>
