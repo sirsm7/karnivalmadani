@@ -362,11 +362,11 @@ const app = {
             if (canPrint) {
                 sijilUI = `
                     <div class="mt-4 pt-3 border-t">
-                        <button onclick="app.janaSijilPDF('${pasukan.id}')" class="bg-purple-600 hover:bg-purple-700 text-white text-sm px-4 py-2 rounded font-bold w-full md:w-auto">🖨️ Cetak Sijil Penyertaan</button>
+                        <button onclick="app.janaSijilPDF('${pasukan.id}')" class="bg-purple-600 hover:bg-purple-700 text-white text-sm px-4 py-2 rounded font-bold w-full md:w-auto">🖨️ Jana Sijil Penyertaan</button>
                     </div>
                 `;
             } else if (hasSubmission) {
-                sijilUI = `<p class="text-xs text-orange-600 mt-2 font-semibold">* Sijil boleh dicetak selepas urusetia membuat pengesahan penyertaan.</p>`;
+                sijilUI = `<p class="text-xs text-orange-600 mt-2 font-semibold">* Sijil boleh dijana selepas urusetia membuat pengesahan penyertaan.</p>`;
             }
 
             const html = `
@@ -448,7 +448,7 @@ const app = {
         const pasukan = appState.pasukanList.find(p => p.id === pasukan_id);
         if (!pasukan) return;
 
-        showLoading("Menjana Sijil PDF...");
+        showLoading("Memproses Sijil PDF...");
         
         try {
             const { jsPDF } = window.jspdf;
@@ -464,12 +464,11 @@ const app = {
             const tinggiA4 = 297;
 
             const generateHalamanSijil = (nama, role) => {
-                // Tiada lagi doc.rect() untuk background/border
-
                 // Kedudukan Y diselaraskan untuk A4 Portrait
                 if (appState.imgLogoBase64) {
                     try {
-                        doc.addImage(appState.imgLogoBase64, 'PNG', lebarA4/2 - 20, 30, 40, 40);
+                        // Besarkan logo (Contoh: Lebar 60, Tinggi 60) dan letak di tengah
+                        doc.addImage(appState.imgLogoBase64, 'PNG', lebarA4/2 - 30, 20, 60, 60);
                     } catch (e) {
                         console.warn("Gagal melukis logo di PDF", e);
                     }
@@ -478,29 +477,29 @@ const app = {
                 doc.setFont("helvetica", "bold");
                 doc.setFontSize(28);
                 doc.setTextColor(30, 64, 175);
-                doc.text("SIJIL PENYERTAAN", lebarA4/2, 90, { align: "center" });
+                doc.text("SIJIL PENYERTAAN", lebarA4/2, 100, { align: "center" });
 
                 doc.setFont("helvetica", "normal");
                 doc.setFontSize(14);
                 doc.setTextColor(50, 50, 50);
-                doc.text("Dengan ini disahkan bahawa", lebarA4/2, 105, { align: "center" });
+                doc.text("Dengan ini disahkan bahawa", lebarA4/2, 115, { align: "center" });
 
                 doc.setFont("helvetica", "bold");
                 doc.setFontSize(22);
                 doc.setTextColor(0, 0, 0);
-                doc.text(nama.toUpperCase(), lebarA4/2, 120, { align: "center" });
+                doc.text(nama.toUpperCase(), lebarA4/2, 130, { align: "center" });
 
                 doc.setFont("helvetica", "normal");
                 doc.setFontSize(14);
-                doc.text(`Telah menyertai sebagai ${role} mewakili`, lebarA4/2, 135, { align: "center" });
+                doc.text(`Telah menyertai sebagai ${role} mewakili`, lebarA4/2, 145, { align: "center" });
                 
                 doc.setFont("helvetica", "bold");
                 doc.setFontSize(16);
-                doc.text(appState.sekolah.nama.toUpperCase(), lebarA4/2, 145, { align: "center" });
+                doc.text(appState.sekolah.nama.toUpperCase(), lebarA4/2, 155, { align: "center" });
 
                 doc.setFont("helvetica", "normal");
                 doc.setFontSize(14);
-                doc.text(`dalam`, lebarA4/2, 160, { align: "center" });
+                doc.text(`dalam`, lebarA4/2, 170, { align: "center" });
 
                 doc.setFont("helvetica", "bold");
                 doc.setFontSize(16);
@@ -509,10 +508,10 @@ const app = {
                 
                 // Pecahkan tajuk panjang kepada berbilang baris jika perlu
                 const splitTitle = doc.splitTextToSize(tajukPert.toUpperCase(), lebarA4 - 40);
-                doc.text(splitTitle, lebarA4/2, 170, { align: "center" });
+                doc.text(splitTitle, lebarA4/2, 180, { align: "center" });
 
                 // Kira kedudukan Y seterusnya berdasarkan bilangan baris tajuk
-                const nextY = 170 + (splitTitle.length * 8);
+                const nextY = 180 + (splitTitle.length * 8);
 
                 doc.setFont("helvetica", "normal");
                 doc.setFontSize(12);
@@ -523,15 +522,14 @@ const app = {
 
                 if (appState.imgSignBase64) {
                     try {
-                        doc.addImage(appState.imgSignBase64, 'PNG', lebarA4/2 - 25, 220, 50, 20);
+                        // Besarkan imej tandatangan. (Contoh: Lebar 90, Tinggi 36)
+                        doc.addImage(appState.imgSignBase64, 'PNG', lebarA4/2 - 45, 220, 90, 36);
                     } catch (e) {
                          console.warn("Gagal melukis tandatangan di PDF", e);
                     }
                 }
                 
-                doc.setFontSize(10);
-                doc.text("PEGAWAI PENDIDIKAN DAERAH", lebarA4/2, 245, { align: "center" });
-                doc.text("PEJABAT PENDIDIKAN DAERAH ALOR GAJAH", lebarA4/2, 250, { align: "center" });
+                // Teks "PEGAWAI PENDIDIKAN DAERAH..." telah dibuang
             };
 
             generateHalamanSijil(appState.guru.nama, "GURU PEMBIMBING");
@@ -546,21 +544,19 @@ const app = {
                 generateHalamanSijil(pasukan.karnival_murid[1].nama, "PESERTA");
             }
 
-            // Dapatkan URL blob untuk dipaparkan dalam iframe
-            const blobUrl = doc.output('bloburl');
             hideLoading();
 
-            // Paparkan Preview dalam SweetAlert2
+            // Ralat muat naik `blob:` dalam iframe boleh memecahkan antaramuka di pelayar tertentu.
+            // Kita gantikan dengan dialog pengesahan SweetAlert2.
             const result = await Swal.fire({
-                title: 'Pratonton Sijil',
-                html: `<iframe src="${blobUrl}" style="width: 100%; height: 60vh; border: none;"></iframe>`,
-                width: '80%', // Jadikan modal lebih lebar untuk preview
+                title: 'Sijil Selesai Dijana',
+                text: 'Sijil pasukan ini sedia untuk dimuat turun dan dicetak.',
+                icon: 'success',
                 showCancelButton: true,
                 confirmButtonText: 'Muat Turun PDF',
-                cancelButtonText: 'Tutup',
-                customClass: {
-                    popup: 'swal-wide' // Tambahan kelas CSS jika perlu (opsional)
-                }
+                cancelButtonText: 'Batal',
+                confirmButtonColor: '#10b981', // Tailwind green-500
+                cancelButtonColor: '#6b7280'   // Tailwind gray-500
             });
 
             // Jika pengguna klik "Muat Turun PDF"
