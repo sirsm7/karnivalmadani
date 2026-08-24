@@ -475,8 +475,8 @@ const app = {
                 // Kedudukan Y diselaraskan untuk A4 Portrait
                 if (appState.imgLogoBase64) {
                     try {
-                        // Kecilkan logo kepada Lebar 25, Tinggi 25, dan letak di tengah
-                        doc.addImage(appState.imgLogoBase64, 'PNG', lebarA4/2 - 12.5, 20, 25, 25);
+                        // Skala logo diselaraskan sama seperti projek RPMAI
+                        doc.addImage(appState.imgLogoBase64, 'PNG', lebarA4/2 - 25.3, 20, 50.6, 33.73);
                     } catch (e) {
                         console.warn("Gagal melukis logo di PDF", e);
                     }
@@ -541,8 +541,8 @@ const app = {
 
                 if (appState.imgSignBase64) {
                     try {
-                        // Besarkan imej tandatangan kepada Lebar 130, Tinggi 52
-                        doc.addImage(appState.imgSignBase64, 'PNG', lebarA4/2 - 65, 200, 130, 52);
+                        // Skala tandatangan diselaraskan sama seperti projek RPMAI
+                        doc.addImage(appState.imgSignBase64, 'PNG', lebarA4/2 - 48.3, 230, 96.6, 38.64);
                     } catch (e) {
                          console.warn("Gagal melukis tandatangan di PDF", e);
                     }
