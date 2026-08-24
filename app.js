@@ -716,9 +716,9 @@ const app = {
         try {
             const { jsPDF } = window.jspdf;
             
-            // Menggunakan orientasi Portrait dan format A4
+            // Menggunakan orientasi Landscape dan format A4
             const doc = new jsPDF({
-                orientation: 'portrait',
+                orientation: 'landscape',
                 format: 'a4'
             });
 
@@ -728,16 +728,16 @@ const app = {
                 doc.addFont("GreatVibes-Regular.ttf", "GreatVibes", "normal");
             }
 
-            // Dimensi A4 Portrait (Lebar: 210mm, Tinggi: 297mm)
-            const lebarA4 = 210;
-            const tinggiA4 = 297;
+            // Dimensi A4 Landscape (Lebar: 297mm, Tinggi: 210mm)
+            const lebarA4 = 297;
+            const tinggiA4 = 210;
 
             const generateHalamanSijil = (nama, role) => {
-                // Kedudukan Y diselaraskan untuk A4 Portrait
+                // Kedudukan Y diselaraskan untuk A4 Landscape
                 if (appState.imgLogoBase64) {
                     try {
-                        // Skala logo diselaraskan sama seperti projek RPMAI
-                        doc.addImage(appState.imgLogoBase64, 'PNG', lebarA4/2 - 25.3, 20, 50.6, 33.73);
+                        // Skala logo diselaraskan, diletakkan lebih ke atas sedikit
+                        doc.addImage(appState.imgLogoBase64, 'PNG', lebarA4/2 - 20, 15, 40, 26);
                     } catch (e) {
                         console.warn("Gagal melukis logo di PDF", e);
                     }
@@ -757,29 +757,29 @@ const app = {
                 
                 // Gunakan huruf Title Case untuk font cursive supaya lebih cantik
                 const titleText = appState.fontGreatVibesBase64 ? "Sijil Penyertaan" : "SIJIL PENYERTAAN";
-                doc.text(titleText, lebarA4/2, 70, { align: "center" });
+                doc.text(titleText, lebarA4/2, 55, { align: "center" });
 
                 doc.setFont("helvetica", "normal");
                 doc.setFontSize(12);
                 doc.setTextColor(50, 50, 50);
-                doc.text("Dengan ini disahkan bahawa", lebarA4/2, 90, { align: "center" });
+                doc.text("Dengan ini disahkan bahawa", lebarA4/2, 70, { align: "center" });
 
                 doc.setFont("helvetica", "bold");
                 doc.setFontSize(16);
                 doc.setTextColor(0, 0, 0);
-                doc.text(nama.toUpperCase(), lebarA4/2, 100, { align: "center" });
+                doc.text(nama.toUpperCase(), lebarA4/2, 80, { align: "center" });
 
                 doc.setFont("helvetica", "normal");
                 doc.setFontSize(12);
-                doc.text(`Telah menyertai sebagai ${role} mewakili`, lebarA4/2, 115, { align: "center" });
+                doc.text(`Telah menyertai sebagai ${role} mewakili`, lebarA4/2, 95, { align: "center" });
                 
                 doc.setFont("helvetica", "bold");
                 doc.setFontSize(14);
-                doc.text(appState.sekolah.nama.toUpperCase(), lebarA4/2, 125, { align: "center" });
+                doc.text(appState.sekolah.nama.toUpperCase(), lebarA4/2, 105, { align: "center" });
 
                 doc.setFont("helvetica", "normal");
                 doc.setFontSize(12);
-                doc.text(`dalam`, lebarA4/2, 140, { align: "center" });
+                doc.text(`dalam`, lebarA4/2, 120, { align: "center" });
 
                 doc.setFont("helvetica", "bold");
                 doc.setFontSize(14);
@@ -788,10 +788,10 @@ const app = {
                 
                 // Pecahkan tajuk panjang kepada berbilang baris jika perlu
                 const splitTitle = doc.splitTextToSize(tajukPert.toUpperCase(), lebarA4 - 40);
-                doc.text(splitTitle, lebarA4/2, 150, { align: "center" });
+                doc.text(splitTitle, lebarA4/2, 130, { align: "center" });
 
                 // Kira kedudukan Y seterusnya berdasarkan bilangan baris tajuk
-                let nextY = 150 + (splitTitle.length * 6);
+                let nextY = 130 + (splitTitle.length * 6);
 
                 doc.setFont("helvetica", "normal");
                 doc.setFontSize(11);
@@ -801,7 +801,7 @@ const app = {
                 doc.text(splitDesc, lebarA4/2, nextY, { align: "center" });
                 
                 // Menambah maklumat tarikh berdasarkan jenis pertandingan
-                nextY += 10; // Jarak sebelum tarikh
+                nextY += 8; // Jarak sebelum tarikh, dipendekkan untuk landscape
                 let teksTarikh = "";
                 if (appState.pertandingan === 'Animasi AI') {
                     teksTarikh = "25 Ogos 2026 hingga 15 September 2026";
@@ -817,8 +817,8 @@ const app = {
 
                 if (appState.imgSignBase64) {
                     try {
-                        // Skala tandatangan diselaraskan sama seperti projek RPMAI
-                        doc.addImage(appState.imgSignBase64, 'PNG', lebarA4/2 - 48.3, 230, 96.6, 38.64);
+                        // Skala tandatangan diselaraskan, diletakkan lebih bawah
+                        doc.addImage(appState.imgSignBase64, 'PNG', lebarA4/2 - 40, 155, 80, 32);
                     } catch (e) {
                          console.warn("Gagal melukis tandatangan di PDF", e);
                     }
