@@ -60,6 +60,35 @@
                     </div>
                 </div>
 
+                <!-- SENARAI GURU TANPA PASUKAN -->
+                <div class="bg-red-50 p-4 rounded-lg mb-6 border border-red-200">
+                    <h3 class="font-bold text-red-800 mb-2 border-b border-red-200 pb-1">
+                        ⚠️ Guru Berdaftar Tetapi Belum Mendaftarkan Pasukan (<span id="count_guru_kosong">0</span>)
+                    </h3>
+                    <div class="grid md:grid-cols-2 gap-4">
+                        
+                        <!-- Animasi AI -->
+                        <div>
+                            <h4 class="text-sm font-bold text-indigo-700 mb-2 bg-indigo-100 p-1 rounded px-2">Animasi AI Kemerdekaan</h4>
+                            <ul id="list_guru_kosong_animasi" class="space-y-2 text-sm max-h-48 overflow-y-auto">
+                                <!-- JS Render -->
+                            </ul>
+                        </div>
+                        
+                        <!-- Mikrobotik -->
+                        <div>
+                            <h4 class="text-sm font-bold text-green-700 mb-2 bg-green-100 p-1 rounded px-2">Robotik: Mikrobotik</h4>
+                            <ul id="list_guru_kosong_robotik" class="space-y-2 text-sm max-h-48 overflow-y-auto">
+                                <!-- JS Render -->
+                            </ul>
+                        </div>
+
+                    </div>
+                </div>
+
+                <div class="border-t-2 border-gray-300 my-6"></div>
+                <h3 class="font-bold text-lg mb-4 text-gray-800">Senarai Pasukan Berdaftar</h3>
+
                 <!-- Filters -->
                 <div class="bg-gray-50 p-4 rounded-lg mb-6 border flex gap-4">
                     <div class="w-1/2">
@@ -174,6 +203,7 @@
 
         const adminApp = {
             dataPasukan: [],
+            dataGuruTanpaPasukan: [],
 
             login: (e) => {
                 e.preventDefault();
@@ -192,14 +222,15 @@
                 document.getElementById('view_login').classList.remove('hidden');
                 document.getElementById('admin_pwd').value = '';
                 adminApp.dataPasukan = [];
+                adminApp.dataGuruTanpaPasukan = [];
             },
 
             loadSenarai: async () => {
                 document.getElementById('loading_overlay').classList.remove('hidden');
                 
                 try {
-                    // Fetch data menggunakan Relational Queries Supabase
-                    const { data, error } = await supabaseClientAdmin
+                    // 1. Fetch data pasukan
+                    const { data: dataPasukan, error: errPasukan } = await supabaseClientAdmin
                         .from('karnival_pasukan')
                         .select(`
                             id, nama_pasukan, pautan_hasil, disahkan, created_at,
@@ -208,15 +239,71 @@
                         `)
                         .order('created_at', { ascending: false });
 
-                    if (error) throw error;
+                    if (errPasukan) throw errPasukan;
+                    adminApp.dataPasukan = dataPasukan;
                     
-                    adminApp.dataPasukan = data;
+                    // 2. Fetch data guru beserta count pasukan untuk mencari guru tiada pasukan
+                    const { data: dataGuru, error: errGuru } = await supabaseClientAdmin
+                        .from('karnival_guru')
+                        .select(`
+                            id, nama, notel, pertandingan,
+                            karnival_sekolah (kod, nama),
+                            karnival_pasukan (id)
+                        `);
+                        
+                    if (errGuru) throw errGuru;
+                    
+                    // Tapis guru yang array karnival_pasukan kosong
+                    adminApp.dataGuruTanpaPasukan = dataGuru.filter(g => !g.karnival_pasukan || g.karnival_pasukan.length === 0);
+
+                    adminApp.renderGuruTanpaPasukan();
                     adminApp.renderTable();
                 } catch (error) {
                     console.error("Ralat memuat senarai:", error);
                     Swal.fire('Ralat', 'Ralat memuat turun data.', 'error');
                 } finally {
                     document.getElementById('loading_overlay').classList.add('hidden');
+                }
+            },
+
+            renderGuruTanpaPasukan: () => {
+                const listAnimasi = document.getElementById('list_guru_kosong_animasi');
+                const listRobotik = document.getElementById('list_guru_kosong_robotik');
+                
+                listAnimasi.innerHTML = '';
+                listRobotik.innerHTML = '';
+                
+                document.getElementById('count_guru_kosong').textContent = adminApp.dataGuruTanpaPasukan.length;
+
+                const animasis = adminApp.dataGuruTanpaPasukan.filter(g => g.pertandingan === 'Animasi AI');
+                const robotiks = adminApp.dataGuruTanpaPasukan.filter(g => g.pertandingan === 'Mikrobotik');
+
+                const createListItem = (guru) => {
+                    const li = document.createElement('li');
+                    li.className = "bg-white p-2 rounded border shadow-sm flex justify-between items-start";
+                    li.innerHTML = `
+                        <div>
+                            <div class="font-bold text-gray-800">${guru.nama}</div>
+                            <div class="text-xs text-gray-600">${guru.karnival_sekolah.nama}</div>
+                            <div class="text-xs text-gray-500">Tel: ${guru.notel}</div>
+                        </div>
+                        <button onclick="adminApp.mintaPadamGuru('${guru.id}')" class="text-xs bg-red-100 text-red-600 hover:bg-red-200 px-2 py-1 rounded ml-2 whitespace-nowrap">
+                            Padam
+                        </button>
+                    `;
+                    return li;
+                };
+
+                if (animasis.length === 0) {
+                    listAnimasi.innerHTML = '<li class="text-gray-500 italic p-2">Tiada rekod.</li>';
+                } else {
+                    animasis.forEach(g => listAnimasi.appendChild(createListItem(g)));
+                }
+
+                if (robotiks.length === 0) {
+                    listRobotik.innerHTML = '<li class="text-gray-500 italic p-2">Tiada rekod.</li>';
+                } else {
+                    robotiks.forEach(g => listRobotik.appendChild(createListItem(g)));
                 }
             },
 
@@ -275,14 +362,14 @@
                     const btnEdit = `<button onclick="adminApp.bukaBorangKemaskini('${item.id}')" class="bg-yellow-500 hover:bg-yellow-600 text-white text-xs px-2 py-1 rounded w-full mb-1">✏️ Edit</button>`;
                     const btnPadam = `<button onclick="adminApp.mintaPadamPasukan('${item.id}')" class="bg-red-500 hover:bg-red-600 text-white text-xs px-2 py-1 rounded w-full">🗑️ Padam</button>`;
                     
-                    const btnPadamGuru = `<button onclick="adminApp.mintaPadamGuru('${guru.id}')" class="mt-2 text-xs text-red-600 hover:underline border border-red-200 px-1 py-0.5 rounded bg-red-50">Padam Guru Ini</button>`;
+                    const btnPadamGuru = `<button onclick="adminApp.mintaPadamGuru('${guru.id}')" class="mt-2 text-xs text-red-600 hover:underline border border-red-200 px-1 py-0.5 rounded bg-red-50 w-full">Padam Guru Ini</button>`;
 
                     const tr = document.createElement('tr');
                     tr.className = "border-b border-gray-200 hover:bg-gray-100";
                     tr.innerHTML = `
                         <td class="py-3 px-3 align-top">
                             <div class="font-bold">${sekolah.nama} (${sekolah.kod})</div>
-                            <div class="text-xs text-gray-500">Guru: ${guru.nama}</div>
+                            <div class="text-xs text-gray-500 mt-1">Guru: ${guru.nama}</div>
                             <div class="text-xs text-gray-500">No.Tel: ${guru.notel}</div>
                             ${btnPadamGuru}
                         </td>
@@ -472,7 +559,7 @@
             mintaPadamGuru: async (guru_id) => {
                 const result = await Swal.fire({
                     title: 'PADAM KESELURUHAN GURU?',
-                    html: "Memadam guru ini akan memadam <b>KESELURUHAN</b> pasukan dan murid yang didaftarkan di bawahnya.<br><br>Tindakan ini <b>TIDAK BOLEH</b> dipatahbalik. Teruskan?",
+                    html: "Memadam guru ini akan memadam <b>KESELURUHAN</b> rekod pasukan dan murid yang didaftarkan di bawahnya (jika ada).<br><br>Tindakan ini <b>TIDAK BOLEH</b> dipatahbalik. Teruskan?",
                     icon: 'error',
                     showCancelButton: true,
                     confirmButtonColor: '#d33',
