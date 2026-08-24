@@ -274,30 +274,33 @@
 
                     const btnEdit = `<button onclick="adminApp.bukaBorangKemaskini('${item.id}')" class="bg-yellow-500 hover:bg-yellow-600 text-white text-xs px-2 py-1 rounded w-full mb-1">✏️ Edit</button>`;
                     const btnPadam = `<button onclick="adminApp.mintaPadamPasukan('${item.id}')" class="bg-red-500 hover:bg-red-600 text-white text-xs px-2 py-1 rounded w-full">🗑️ Padam</button>`;
+                    
+                    const btnPadamGuru = `<button onclick="adminApp.mintaPadamGuru('${guru.id}')" class="mt-2 text-xs text-red-600 hover:underline border border-red-200 px-1 py-0.5 rounded bg-red-50">Padam Guru Ini</button>`;
 
                     const tr = document.createElement('tr');
                     tr.className = "border-b border-gray-200 hover:bg-gray-100";
                     tr.innerHTML = `
-                        <td class="py-3 px-3">
+                        <td class="py-3 px-3 align-top">
                             <div class="font-bold">${sekolah.nama} (${sekolah.kod})</div>
                             <div class="text-xs text-gray-500">Guru: ${guru.nama}</div>
                             <div class="text-xs text-gray-500">No.Tel: ${guru.notel}</div>
+                            ${btnPadamGuru}
                         </td>
-                        <td class="py-3 px-3">
+                        <td class="py-3 px-3 align-top">
                             <div class="font-bold text-indigo-700 mb-1">${item.nama_pasukan}</div>
                             <div class="text-xs">${muridStr}</div>
                         </td>
-                        <td class="py-3 px-3">
+                        <td class="py-3 px-3 align-top">
                             <div class="font-bold text-xs mb-1">${guru.pertandingan}</div>
                             <div class="text-xs bg-gray-200 inline-block px-1 rounded">${guru.kategori_pertandingan}</div>
                         </td>
-                        <td class="py-3 px-3 text-center">
+                        <td class="py-3 px-3 text-center align-top">
                             ${link}
                         </td>
-                        <td class="py-3 px-3 text-center">
+                        <td class="py-3 px-3 text-center align-top">
                             ${statusBadge}
                         </td>
-                        <td class="py-3 px-3 text-center w-28">
+                        <td class="py-3 px-3 text-center align-top w-28">
                             ${btnSahkan}
                             ${btnBatal}
                             ${btnEdit}
@@ -437,7 +440,7 @@
             mintaPadamPasukan: async (pasukan_id) => {
                 const result = await Swal.fire({
                     title: 'Anda pasti?',
-                    text: "Memadam rekod melalui panel admin akan membuang rekod ini secara kekal. Teruskan?",
+                    text: "Memadam rekod pasukan akan membuang rekod ini secara kekal. Teruskan?",
                     icon: 'warning',
                     showCancelButton: true,
                     confirmButtonColor: '#d33',
@@ -460,6 +463,38 @@
                     } catch (error) {
                         console.error("Ralat padam:", error);
                         Swal.fire('Ralat', 'Gagal memadam pasukan.', 'error');
+                    } finally {
+                        document.getElementById('loading_overlay').classList.add('hidden');
+                    }
+                }
+            },
+            
+            mintaPadamGuru: async (guru_id) => {
+                const result = await Swal.fire({
+                    title: 'PADAM KESELURUHAN GURU?',
+                    html: "Memadam guru ini akan memadam <b>KESELURUHAN</b> pasukan dan murid yang didaftarkan di bawahnya.<br><br>Tindakan ini <b>TIDAK BOLEH</b> dipatahbalik. Teruskan?",
+                    icon: 'error',
+                    showCancelButton: true,
+                    confirmButtonColor: '#d33',
+                    cancelButtonColor: '#3085d6',
+                    confirmButtonText: 'Ya, Padam Semua!',
+                    cancelButtonText: 'Batal'
+                });
+
+                if (result.isConfirmed) {
+                    document.getElementById('loading_overlay').classList.remove('hidden');
+                    try {
+                        const { error } = await supabaseClientAdmin.rpc('karnival_padam_guru', {
+                            p_guru_id: guru_id
+                        });
+
+                        if (error) throw error;
+                        
+                        Swal.fire('Berjaya!', 'Rekod guru dan pasukannya telah dipadam secara keseluruhan.', 'success');
+                        await adminApp.loadSenarai();
+                    } catch (error) {
+                        console.error("Ralat padam guru:", error);
+                        Swal.fire('Ralat', 'Gagal memadam rekod guru.', 'error');
                     } finally {
                         document.getElementById('loading_overlay').classList.add('hidden');
                     }

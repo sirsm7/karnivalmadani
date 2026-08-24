@@ -19,6 +19,11 @@
         .hidden { display: none !important; }
         input, select { text-transform: uppercase; }
         input[type="email"], input[id="guru_emel"], input[id="murid1_emel"], input[id="murid2_emel"], input[id="pautan_hasil"], input[id="edit_murid1_emel"], input[id="edit_murid2_emel"] { text-transform: none; }
+        /* Scrollbar untuk dropdown custom */
+        #dropdown_sekolah::-webkit-scrollbar { width: 8px; }
+        #dropdown_sekolah::-webkit-scrollbar-track { background: #f1f1f1; border-radius: 4px; }
+        #dropdown_sekolah::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+        #dropdown_sekolah::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
     </style>
 </head>
 <body class="bg-gray-100 min-h-screen font-sans text-gray-800">
@@ -38,15 +43,14 @@
             <!-- PAPARAN 1: Pilih Sekolah -->
             <section id="view_pilih_sekolah">
                 <h2 class="text-xl font-bold border-b pb-2 mb-4">Langkah 1: Pilih Sekolah</h2>
-                <div class="mb-4">
-                    <label class="block text-gray-700 font-bold mb-2">Carian Pantas (Pilihan):</label>
-                    <input type="text" id="carian_sekolah" placeholder="Taip nama atau kod sekolah..." class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 mb-2">
+                <div class="mb-4 relative">
+                    <label class="block text-gray-700 font-bold mb-2">Cari dan Pilih Sekolah Anda:</label>
+                    <input type="text" id="carian_sekolah" autocomplete="off" placeholder="Taip nama atau kod sekolah di sini..." class="w-full px-3 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white shadow-sm">
                     
-                    <label class="block text-gray-700 font-bold mb-2">Pilih Sekolah Anda:</label>
-                    <select id="select_sekolah" class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
-                        <option value="">-- SILA PILIH SEKOLAH --</option>
-                        <!-- Pilihan sekolah akan di-populate oleh JS -->
-                    </select>
+                    <!-- Custom Dropdown List -->
+                    <ul id="dropdown_sekolah" class="hidden absolute z-10 w-full mt-1 bg-white border rounded-lg shadow-lg max-h-60 overflow-y-auto">
+                        <!-- Senarai `li` akan diisi oleh JS -->
+                    </ul>
                 </div>
                 <button id="btn_seterusnya_sekolah" class="w-full bg-blue-600 text-white font-bold py-2 px-4 rounded hover:bg-blue-700 transition">Seterusnya</button>
             </section>
@@ -182,16 +186,16 @@
                         <h3 class="font-bold mb-2 border-b border-blue-200">Maklumat Murid 2</h3>
                         <div class="mb-2">
                             <label class="block text-sm font-bold mb-1">Nama Penuh:</label>
-                            <input type="text" id="murid2_nama" required class="w-full px-2 py-1 border rounded uppercase">
+                            <input type="text" id="murid2_nama" class="w-full px-2 py-1 border rounded uppercase">
                         </div>
                         <div class="grid md:grid-cols-2 gap-4">
                             <div>
                                 <label class="block text-sm font-bold mb-1">No. MYKID / KP:</label>
-                                <input type="text" id="murid2_nokp" required class="w-full px-2 py-1 border rounded">
+                                <input type="text" id="murid2_nokp" class="w-full px-2 py-1 border rounded">
                             </div>
                             <div>
                                 <label class="block text-sm font-bold mb-1">Emel DELIMa:</label>
-                                <input type="email" id="murid2_emel" required class="w-full px-2 py-1 border rounded lowercase">
+                                <input type="email" id="murid2_emel" class="w-full px-2 py-1 border rounded lowercase">
                             </div>
                         </div>
                     </div>

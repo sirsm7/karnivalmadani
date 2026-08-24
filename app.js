@@ -26,6 +26,8 @@ const viewDaftarPasukan = document.getElementById('view_daftar_pasukan');
 const viewKemaskiniPasukan = document.getElementById('view_kemaskini_pasukan');
 const loadingOverlay = document.getElementById('loading_overlay');
 const loadingText = document.getElementById('loading_text');
+const inputCarianSekolah = document.getElementById('carian_sekolah');
+const dropdownSekolah = document.getElementById('dropdown_sekolah');
 
 // --- INIT ---
 document.addEventListener("DOMContentLoaded", async () => {
@@ -49,25 +51,41 @@ async function initApp() {
 
 // Navigasi Langkah 1
 document.getElementById('btn_seterusnya_sekolah').addEventListener('click', () => {
-    const select = document.getElementById('select_sekolah');
-    if (!select.value) {
-        Swal.fire('Peringatan', 'Sila pilih sekolah terlebih dahulu.', 'warning');
+    if (!appState.sekolah) {
+        Swal.fire('Peringatan', 'Sila pilih sekolah daripada senarai yang diberikan.', 'warning');
         return;
     }
-    appState.sekolah = JSON.parse(select.value);
     
     viewPilihSekolah.classList.add('hidden');
     viewPilihPertandingan.classList.remove('hidden');
 });
 
-// Carian Sekolah
-document.getElementById('carian_sekolah').addEventListener('keyup', (e) => {
+// Carian Sekolah - Tunjuk dropdown bila fokus
+inputCarianSekolah.addEventListener('focus', () => {
+    dropdownSekolah.classList.remove('hidden');
+    app.renderSenaraiSekolah(inputCarianSekolah.value);
+});
+
+// Carian Sekolah - Tapis senarai bila menaip
+inputCarianSekolah.addEventListener('keyup', (e) => {
+    dropdownSekolah.classList.remove('hidden');
     app.renderSenaraiSekolah(e.target.value);
+    
+    // Jika user taip balik, kita kena kosongkan pemilihan asal
+    appState.sekolah = null; 
+});
+
+// Sembunyikan dropdown jika klik tempat lain
+document.addEventListener('click', (e) => {
+    if (!inputCarianSekolah.contains(e.target) && !dropdownSekolah.contains(e.target)) {
+        dropdownSekolah.classList.add('hidden');
+    }
 });
 
 // Navigasi Kembali 1
 document.getElementById('btn_back_to_sekolah').addEventListener('click', () => {
     appState.sekolah = null;
+    inputCarianSekolah.value = ''; // Kosongkan carian bila patah balik
     viewPilihPertandingan.classList.add('hidden');
     viewPilihSekolah.classList.remove('hidden');
 });
@@ -84,8 +102,7 @@ document.getElementById('btn_back_to_pertandingan').addEventListener('click', ()
 const app = {
 
     renderSenaraiSekolah: (filterText = '') => {
-        const select = document.getElementById('select_sekolah');
-        select.innerHTML = '<option value="">-- SILA PILIH SEKOLAH --</option>';
+        dropdownSekolah.innerHTML = '';
         
         const filterUpper = filterText.toUpperCase();
         
@@ -93,12 +110,31 @@ const app = {
             return s.nama.includes(filterUpper) || s.kod.includes(filterUpper);
         });
 
+        if (filteredList.length === 0) {
+            dropdownSekolah.innerHTML = `<li class="px-4 py-2 text-gray-500 italic">Tiada sekolah ditemui.</li>`;
+            return;
+        }
+
         filteredList.forEach(s => {
-            const opt = document.createElement('option');
-            opt.value = JSON.stringify(s);
-            opt.textContent = `[${s.kod}] ${s.nama}`;
-            select.appendChild(opt);
+            const li = document.createElement('li');
+            li.className = "px-4 py-2 hover:bg-blue-100 cursor-pointer border-b last:border-b-0 text-sm";
+            li.textContent = `[${s.kod}] ${s.nama}`;
+            
+            // Simpan data sebagai string dalam attribute untuk diekstrak bila di klik
+            li.setAttribute('data-sekolah', JSON.stringify(s));
+            
+            li.addEventListener('click', function() {
+                app.pilihSekolah(this.getAttribute('data-sekolah'), this.textContent);
+            });
+            
+            dropdownSekolah.appendChild(li);
         });
+    },
+    
+    pilihSekolah: (sekolahStr, textPaparan) => {
+        appState.sekolah = JSON.parse(sekolahStr);
+        inputCarianSekolah.value = textPaparan;
+        dropdownSekolah.classList.add('hidden');
     },
 
     pilihPertandingan: (jenis) => {
