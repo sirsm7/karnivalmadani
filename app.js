@@ -12,7 +12,8 @@ const appState = {
     
     // Cached Images for jsPDF
     imgLogoBase64: null,
-    imgSignBase64: null
+    imgSignBase64: null,
+    fontGreatVibesBase64: null // Cache untuk font
 };
 
 // --- DOM ELEMENTS ---
@@ -28,6 +29,7 @@ const loadingText = document.getElementById('loading_text');
 document.addEventListener("DOMContentLoaded", async () => {
     initApp();
     preloadImagesForPDF();
+    preloadFontForPDF(); // Panggil fungsi muat turun font
 });
 
 async function initApp() {
@@ -459,6 +461,12 @@ const app = {
                 format: 'a4'
             });
 
+            // Tambah Font Cursive jika berjaya dimuat turun
+            if (appState.fontGreatVibesBase64) {
+                doc.addFileToVFS("GreatVibes-Regular.ttf", appState.fontGreatVibesBase64);
+                doc.addFont("GreatVibes-Regular.ttf", "GreatVibes", "normal");
+            }
+
             // Dimensi A4 Portrait (Lebar: 210mm, Tinggi: 297mm)
             const lebarA4 = 210;
             const tinggiA4 = 297;
@@ -467,54 +475,65 @@ const app = {
                 // Kedudukan Y diselaraskan untuk A4 Portrait
                 if (appState.imgLogoBase64) {
                     try {
-                        // Besarkan logo (Contoh: Lebar 60, Tinggi 60) dan letak di tengah
-                        doc.addImage(appState.imgLogoBase64, 'PNG', lebarA4/2 - 30, 20, 60, 60);
+                        // Kecilkan logo kepada Lebar 25, Tinggi 25, dan letak di tengah
+                        doc.addImage(appState.imgLogoBase64, 'PNG', lebarA4/2 - 12.5, 20, 25, 25);
                     } catch (e) {
                         console.warn("Gagal melukis logo di PDF", e);
                     }
                 }
 
-                doc.setFont("helvetica", "bold");
-                doc.setFontSize(28);
-                doc.setTextColor(30, 64, 175);
-                doc.text("SIJIL PENYERTAAN", lebarA4/2, 100, { align: "center" });
+                // Cek jika font ada, guna GreatVibes, jika tidak, guna helvetica
+                if (appState.fontGreatVibesBase64) {
+                    doc.setFont("GreatVibes", "normal");
+                    doc.setFontSize(52); // Besarkan saiz untuk cursive
+                    // Gunakan warna merah seperti contoh
+                    doc.setTextColor(220, 38, 38); // Tailwind red-600
+                } else {
+                    doc.setFont("helvetica", "bold");
+                    doc.setFontSize(28);
+                    doc.setTextColor(30, 64, 175);
+                }
+                
+                // Gunakan huruf Title Case untuk font cursive supaya lebih cantik
+                const titleText = appState.fontGreatVibesBase64 ? "Sijil Penyertaan" : "SIJIL PENYERTAAN";
+                doc.text(titleText, lebarA4/2, 70, { align: "center" });
 
                 doc.setFont("helvetica", "normal");
-                doc.setFontSize(14);
+                doc.setFontSize(12);
                 doc.setTextColor(50, 50, 50);
-                doc.text("Dengan ini disahkan bahawa", lebarA4/2, 115, { align: "center" });
+                doc.text("Dengan ini disahkan bahawa", lebarA4/2, 90, { align: "center" });
 
                 doc.setFont("helvetica", "bold");
-                doc.setFontSize(22);
+                doc.setFontSize(16);
                 doc.setTextColor(0, 0, 0);
-                doc.text(nama.toUpperCase(), lebarA4/2, 130, { align: "center" });
+                doc.text(nama.toUpperCase(), lebarA4/2, 100, { align: "center" });
 
                 doc.setFont("helvetica", "normal");
-                doc.setFontSize(14);
-                doc.text(`Telah menyertai sebagai ${role} mewakili`, lebarA4/2, 145, { align: "center" });
+                doc.setFontSize(12);
+                doc.text(`Telah menyertai sebagai ${role} mewakili`, lebarA4/2, 115, { align: "center" });
                 
                 doc.setFont("helvetica", "bold");
-                doc.setFontSize(16);
-                doc.text(appState.sekolah.nama.toUpperCase(), lebarA4/2, 155, { align: "center" });
+                doc.setFontSize(14);
+                doc.text(appState.sekolah.nama.toUpperCase(), lebarA4/2, 125, { align: "center" });
 
                 doc.setFont("helvetica", "normal");
-                doc.setFontSize(14);
-                doc.text(`dalam`, lebarA4/2, 170, { align: "center" });
+                doc.setFontSize(12);
+                doc.text(`dalam`, lebarA4/2, 140, { align: "center" });
 
                 doc.setFont("helvetica", "bold");
-                doc.setFontSize(16);
+                doc.setFontSize(14);
                 doc.setTextColor(185, 28, 28);
                 let tajukPert = appState.pertandingan === 'Animasi AI' ? "Pertandingan Video Animasi AI Kemerdekaan 2026" : "Pertandingan Robotik: Mikrobotik 2026";
                 
                 // Pecahkan tajuk panjang kepada berbilang baris jika perlu
                 const splitTitle = doc.splitTextToSize(tajukPert.toUpperCase(), lebarA4 - 40);
-                doc.text(splitTitle, lebarA4/2, 180, { align: "center" });
+                doc.text(splitTitle, lebarA4/2, 150, { align: "center" });
 
                 // Kira kedudukan Y seterusnya berdasarkan bilangan baris tajuk
-                const nextY = 180 + (splitTitle.length * 8);
+                const nextY = 150 + (splitTitle.length * 6);
 
                 doc.setFont("helvetica", "normal");
-                doc.setFontSize(12);
+                doc.setFontSize(11);
                 doc.setTextColor(50, 50, 50);
                 const desc = `Sempena Karnival Pendidikan Madani PPD Alor Gajah`;
                 const splitDesc = doc.splitTextToSize(desc, lebarA4 - 40);
@@ -522,14 +541,14 @@ const app = {
 
                 if (appState.imgSignBase64) {
                     try {
-                        // Besarkan imej tandatangan. (Contoh: Lebar 90, Tinggi 36)
-                        doc.addImage(appState.imgSignBase64, 'PNG', lebarA4/2 - 45, 220, 90, 36);
+                        // Besarkan imej tandatangan kepada Lebar 130, Tinggi 52
+                        doc.addImage(appState.imgSignBase64, 'PNG', lebarA4/2 - 65, 200, 130, 52);
                     } catch (e) {
                          console.warn("Gagal melukis tandatangan di PDF", e);
                     }
                 }
                 
-                // Teks "PEGAWAI PENDIDIKAN DAERAH..." telah dibuang
+                // Teks nama dan jawatan pengarah di bawah tandatangan telah dibuang
             };
 
             generateHalamanSijil(appState.guru.nama, "GURU PEMBIMBING");
@@ -546,8 +565,6 @@ const app = {
 
             hideLoading();
 
-            // Ralat muat naik `blob:` dalam iframe boleh memecahkan antaramuka di pelayar tertentu.
-            // Kita gantikan dengan dialog pengesahan SweetAlert2.
             const result = await Swal.fire({
                 title: 'Sijil Selesai Dijana',
                 text: 'Sijil pasukan ini sedia untuk dimuat turun dan dicetak.',
@@ -579,6 +596,27 @@ function showLoading(text) {
 }
 function hideLoading() {
     loadingOverlay.classList.add('hidden');
+}
+
+async function preloadFontForPDF() {
+    try {
+        // Muat turun font Great Vibes (.ttf) dari Google Fonts melalui CDN
+        const fontUrl = 'https://cdn.jsdelivr.net/fontsource/fonts/great-vibes@latest/latin-400-normal.ttf';
+        const response = await fetch(fontUrl);
+        if (!response.ok) throw new Error("Gagal memuat turun font");
+        const buffer = await response.arrayBuffer();
+        
+        // Tukar ArrayBuffer kepada Base64
+        let binary = '';
+        const bytes = new Uint8Array(buffer);
+        const len = bytes.byteLength;
+        for (let i = 0; i < len; i++) {
+            binary += String.fromCharCode(bytes[i]);
+        }
+        appState.fontGreatVibesBase64 = window.btoa(binary);
+    } catch (e) {
+        console.warn("Ralat memuat turun font Cursive, akan guna fon biasa:", e);
+    }
 }
 
 function preloadImagesForPDF() {
