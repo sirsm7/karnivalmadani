@@ -12,6 +12,12 @@
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <!-- Supabase JS -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    
+    <style>
+        .hidden { display: none !important; }
+        input { text-transform: uppercase; }
+        input[type="email"], input[id="admin_pwd"], input[id="edit_murid1_emel"], input[id="edit_murid2_emel"] { text-transform: none; }
+    </style>
 </head>
 <body class="bg-gray-100 min-h-screen font-sans text-gray-800">
 
@@ -94,6 +100,61 @@
                 </div>
             </section>
 
+            <!-- VIEW: BORANG KEMASKINI PASUKAN -->
+            <section id="view_kemaskini_pasukan" class="hidden">
+                <button onclick="adminApp.tutupBorangKemaskini()" class="text-gray-600 mb-4 hover:underline text-sm">&larr; Batal & Kembali ke Dashboard</button>
+                <h2 class="text-xl font-bold border-b pb-2 mb-4 bg-yellow-100 p-2 rounded">Kemaskini Maklumat Pasukan (Mod Admin)</h2>
+                
+                <form id="form_kemaskini_pasukan" onsubmit="adminApp.simpanKemaskiniPasukan(event)">
+                    <input type="hidden" id="edit_pasukan_id">
+                    
+                    <div class="mb-4">
+                        <label class="block text-gray-700 font-bold mb-2">Nama Pasukan:</label>
+                        <input type="text" id="edit_pasukan_nama" required class="w-full px-3 py-2 border rounded-lg" style="text-transform: none;">
+                    </div>
+
+                    <!-- Maklumat Murid 1 -->
+                    <div class="bg-blue-50 p-4 rounded-lg border mb-4">
+                        <h3 class="font-bold mb-2 border-b border-blue-200">Maklumat Murid 1 (Ketua)</h3>
+                        <div class="mb-2">
+                            <label class="block text-sm font-bold mb-1">Nama Penuh:</label>
+                            <input type="text" id="edit_murid1_nama" required class="w-full px-2 py-1 border rounded uppercase">
+                        </div>
+                        <div class="grid md:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-bold mb-1">No. MYKID / KP:</label>
+                                <input type="text" id="edit_murid1_nokp" required class="w-full px-2 py-1 border rounded">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-bold mb-1">Emel DELIMa:</label>
+                                <input type="email" id="edit_murid1_emel" required class="w-full px-2 py-1 border rounded lowercase">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Maklumat Murid 2 -->
+                    <div class="bg-blue-50 p-4 rounded-lg border mb-6">
+                        <h3 class="font-bold mb-2 border-b border-blue-200">Maklumat Murid 2</h3>
+                        <div class="mb-2">
+                            <label class="block text-sm font-bold mb-1">Nama Penuh:</label>
+                            <input type="text" id="edit_murid2_nama" class="w-full px-2 py-1 border rounded uppercase">
+                        </div>
+                        <div class="grid md:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-bold mb-1">No. MYKID / KP:</label>
+                                <input type="text" id="edit_murid2_nokp" class="w-full px-2 py-1 border rounded">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-bold mb-1">Emel DELIMa:</label>
+                                <input type="email" id="edit_murid2_emel" class="w-full px-2 py-1 border rounded lowercase">
+                            </div>
+                        </div>
+                    </div>
+
+                    <button type="submit" class="w-full bg-yellow-500 text-white font-bold py-2 px-4 rounded hover:bg-yellow-600 transition">Simpan Kemaskini</button>
+                </form>
+            </section>
+
         </main>
     </div>
 
@@ -143,7 +204,7 @@
                         .select(`
                             id, nama_pasukan, pautan_hasil, disahkan, created_at,
                             karnival_guru ( id, nama, notel, pertandingan, kategori_pertandingan, karnival_sekolah (kod, nama) ),
-                            karnival_murid ( nama, nokp )
+                            karnival_murid ( nama, nokp, emel )
                         `)
                         .order('created_at', { ascending: false });
 
@@ -200,16 +261,19 @@
                         : `<span class="text-red-500 text-xs">Belum Hantar</span>`;
 
                     const statusBadge = item.disahkan 
-                        ? `<span class="bg-green-100 text-green-800 text-xs font-semibold px-2 py-1 rounded">Disahkan</span>` 
-                        : `<span class="bg-yellow-100 text-yellow-800 text-xs font-semibold px-2 py-1 rounded">Belum</span>`;
+                        ? `<span class="bg-green-100 text-green-800 text-xs font-semibold px-2 py-1 rounded mb-1 inline-block">Disahkan</span>` 
+                        : `<span class="bg-yellow-100 text-yellow-800 text-xs font-semibold px-2 py-1 rounded mb-1 inline-block">Belum</span>`;
 
                     const btnSahkan = (!item.disahkan && item.pautan_hasil)
-                        ? `<button onclick="adminApp.sahkanPasukan('${item.id}')" class="bg-blue-600 hover:bg-blue-700 text-white text-xs px-3 py-1 rounded w-full mb-1">Sahkan Rekod</button>`
+                        ? `<button onclick="adminApp.sahkanPasukan('${item.id}')" class="bg-blue-600 hover:bg-blue-700 text-white text-xs px-2 py-1 rounded w-full mb-1">✅ Sahkan</button>`
                         : '';
                     
                     const btnBatal = item.disahkan
-                        ? `<button onclick="adminApp.batalPengesahan('${item.id}')" class="bg-gray-500 hover:bg-gray-600 text-white text-xs px-3 py-1 rounded w-full">Batal Pengesahan</button>`
+                        ? `<button onclick="adminApp.batalPengesahan('${item.id}')" class="bg-gray-500 hover:bg-gray-600 text-white text-xs px-2 py-1 rounded w-full mb-1">❌ Batal Sah</button>`
                         : '';
+
+                    const btnEdit = `<button onclick="adminApp.bukaBorangKemaskini('${item.id}')" class="bg-yellow-500 hover:bg-yellow-600 text-white text-xs px-2 py-1 rounded w-full mb-1">✏️ Edit</button>`;
+                    const btnPadam = `<button onclick="adminApp.mintaPadamPasukan('${item.id}')" class="bg-red-500 hover:bg-red-600 text-white text-xs px-2 py-1 rounded w-full">🗑️ Padam</button>`;
 
                     const tr = document.createElement('tr');
                     tr.className = "border-b border-gray-200 hover:bg-gray-100";
@@ -233,9 +297,11 @@
                         <td class="py-3 px-3 text-center">
                             ${statusBadge}
                         </td>
-                        <td class="py-3 px-3 text-center">
+                        <td class="py-3 px-3 text-center w-28">
                             ${btnSahkan}
                             ${btnBatal}
+                            ${btnEdit}
+                            ${btnPadam}
                         </td>
                     `;
                     tbody.appendChild(tr);
@@ -287,6 +353,116 @@
                         Swal.fire('Berjaya', 'Pengesahan telah dibatalkan.', 'success');
                     }
                     document.getElementById('loading_overlay').classList.add('hidden');
+                }
+            },
+
+            bukaBorangKemaskini: (pasukan_id) => {
+                const pasukan = adminApp.dataPasukan.find(p => p.id === pasukan_id);
+                if (!pasukan) return;
+
+                document.getElementById('edit_pasukan_id').value = pasukan.id;
+                document.getElementById('edit_pasukan_nama').value = pasukan.nama_pasukan;
+
+                const murid1 = pasukan.karnival_murid[0];
+                if (murid1) {
+                    document.getElementById('edit_murid1_nama').value = murid1.nama;
+                    document.getElementById('edit_murid1_nokp').value = murid1.nokp;
+                    document.getElementById('edit_murid1_emel').value = murid1.emel || '';
+                } else {
+                    document.getElementById('edit_murid1_nama').value = '';
+                    document.getElementById('edit_murid1_nokp').value = '';
+                    document.getElementById('edit_murid1_emel').value = '';
+                }
+
+                const murid2 = pasukan.karnival_murid[1];
+                if (murid2) {
+                    document.getElementById('edit_murid2_nama').value = murid2.nama;
+                    document.getElementById('edit_murid2_nokp').value = murid2.nokp;
+                    document.getElementById('edit_murid2_emel').value = murid2.emel || '';
+                } else {
+                    document.getElementById('edit_murid2_nama').value = '';
+                    document.getElementById('edit_murid2_nokp').value = '';
+                    document.getElementById('edit_murid2_emel').value = '';
+                }
+
+                document.getElementById('view_dashboard').classList.add('hidden');
+                document.getElementById('view_kemaskini_pasukan').classList.remove('hidden');
+            },
+
+            tutupBorangKemaskini: () => {
+                document.getElementById('view_kemaskini_pasukan').classList.add('hidden');
+                document.getElementById('view_dashboard').classList.remove('hidden');
+            },
+
+            simpanKemaskiniPasukan: async (e) => {
+                e.preventDefault();
+
+                const pasukan_id = document.getElementById('edit_pasukan_id').value;
+                const nama_pasukan = document.getElementById('edit_pasukan_nama').value.trim();
+                const m1_nama = document.getElementById('edit_murid1_nama').value.trim().toUpperCase();
+                const m1_nokp = document.getElementById('edit_murid1_nokp').value.trim();
+                const m1_emel = document.getElementById('edit_murid1_emel').value.trim().toLowerCase();
+                
+                const m2_nama = document.getElementById('edit_murid2_nama').value.trim().toUpperCase();
+                const m2_nokp = document.getElementById('edit_murid2_nokp').value.trim();
+                const m2_emel = document.getElementById('edit_murid2_emel').value.trim().toLowerCase();
+
+                document.getElementById('loading_overlay').classList.remove('hidden');
+                
+                try {
+                    const { error } = await supabaseClientAdmin.rpc('karnival_kemaskini_pasukan', {
+                        p_pasukan_id: pasukan_id,
+                        p_nama_pasukan: nama_pasukan,
+                        p_murid1_nama: m1_nama,
+                        p_murid1_nokp: m1_nokp,
+                        p_murid1_emel: m1_emel,
+                        p_murid2_nama: m2_nama !== '' ? m2_nama : null,
+                        p_murid2_nokp: m2_nama !== '' ? m2_nokp : null,
+                        p_murid2_emel: m2_nama !== '' ? m2_emel : null
+                    });
+
+                    if (error) throw error;
+                    
+                    Swal.fire('Berjaya', 'Maklumat pasukan berjaya dikemaskini.', 'success');
+                    adminApp.tutupBorangKemaskini();
+                    await adminApp.loadSenarai();
+                } catch (error) {
+                    console.error("Ralat kemaskini:", error);
+                    Swal.fire('Ralat', 'Gagal mengemaskini maklumat.', 'error');
+                } finally {
+                    document.getElementById('loading_overlay').classList.add('hidden');
+                }
+            },
+
+            mintaPadamPasukan: async (pasukan_id) => {
+                const result = await Swal.fire({
+                    title: 'Anda pasti?',
+                    text: "Memadam rekod melalui panel admin akan membuang rekod ini secara kekal. Teruskan?",
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonColor: '#d33',
+                    cancelButtonColor: '#3085d6',
+                    confirmButtonText: 'Ya, padam secara paksa!',
+                    cancelButtonText: 'Batal'
+                });
+
+                if (result.isConfirmed) {
+                    document.getElementById('loading_overlay').classList.remove('hidden');
+                    try {
+                        const { error } = await supabaseClientAdmin.rpc('karnival_padam_pasukan', {
+                            p_pasukan_id: pasukan_id
+                        });
+
+                        if (error) throw error;
+                        
+                        Swal.fire('Berjaya!', 'Rekod pasukan telah dipadam.', 'success');
+                        await adminApp.loadSenarai();
+                    } catch (error) {
+                        console.error("Ralat padam:", error);
+                        Swal.fire('Ralat', 'Gagal memadam pasukan.', 'error');
+                    } finally {
+                        document.getElementById('loading_overlay').classList.add('hidden');
+                    }
                 }
             }
         };

@@ -144,6 +144,43 @@ const db = {
             console.error("Ralat muatNaikFailGAS:", error);
             return { success: false, error: error.message };
         }
+    },
+
+    // 8. Padam Pasukan
+    async padamPasukan(pasukan_id) {
+        try {
+            const { error } = await supabaseClient.rpc('karnival_padam_pasukan', {
+                p_pasukan_id: pasukan_id
+            });
+            
+            if (error) throw error;
+            return { success: true };
+        } catch (error) {
+            console.error("Ralat padamPasukan:", error);
+            return { success: false, error: error.message };
+        }
+    },
+
+    // 9. Kemaskini Pasukan
+    async kemaskiniPasukan(pasukan_id, nama_pasukan, murid1, murid2) {
+        try {
+            const { error } = await supabaseClient.rpc('karnival_kemaskini_pasukan', {
+                p_pasukan_id: pasukan_id,
+                p_nama_pasukan: nama_pasukan,
+                p_murid1_nama: murid1.nama,
+                p_murid1_nokp: murid1.nokp,
+                p_murid1_emel: murid1.emel,
+                p_murid2_nama: murid2 ? murid2.nama : null,
+                p_murid2_nokp: murid2 ? murid2.nokp : null,
+                p_murid2_emel: murid2 ? murid2.emel : null
+            });
+            
+            if (error) throw error;
+            return { success: true };
+        } catch (error) {
+            console.error("Ralat kemaskiniPasukan:", error);
+            return { success: false, error: error.message };
+        }
     }
 };
 

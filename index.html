@@ -18,7 +18,7 @@
     <style>
         .hidden { display: none !important; }
         input, select { text-transform: uppercase; }
-        input[type="email"], input[id="guru_emel"], input[id="murid1_emel"], input[id="murid2_emel"], input[id="pautan_hasil"] { text-transform: none; }
+        input[type="email"], input[id="guru_emel"], input[id="murid1_emel"], input[id="murid2_emel"], input[id="pautan_hasil"], input[id="edit_murid1_emel"], input[id="edit_murid2_emel"] { text-transform: none; }
     </style>
 </head>
 <body class="bg-gray-100 min-h-screen font-sans text-gray-800">
@@ -39,6 +39,9 @@
             <section id="view_pilih_sekolah">
                 <h2 class="text-xl font-bold border-b pb-2 mb-4">Langkah 1: Pilih Sekolah</h2>
                 <div class="mb-4">
+                    <label class="block text-gray-700 font-bold mb-2">Carian Pantas (Pilihan):</label>
+                    <input type="text" id="carian_sekolah" placeholder="Taip nama atau kod sekolah..." class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 mb-2">
+                    
                     <label class="block text-gray-700 font-bold mb-2">Pilih Sekolah Anda:</label>
                     <select id="select_sekolah" class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
                         <option value="">-- SILA PILIH SEKOLAH --</option>
@@ -143,10 +146,10 @@
                 </div>
             </section>
 
-            <!-- PAPARAN 5: Borang Daftar Pasukan (Modal/View) -->
+            <!-- PAPARAN 5: Borang Daftar Pasukan -->
             <section id="view_daftar_pasukan" class="hidden">
                 <button onclick="app.tutupBorangPasukan()" class="text-gray-600 mb-4 hover:underline text-sm">&larr; Batal & Kembali ke Dashboard</button>
-                <h2 class="text-xl font-bold border-b pb-2 mb-4 bg-yellow-100 p-2 rounded">Borang Pendaftaran Pasukan Baru</h2>
+                <h2 class="text-xl font-bold border-b pb-2 mb-4 bg-green-100 p-2 rounded">Borang Pendaftaran Pasukan Baru</h2>
                 
                 <form id="form_pasukan" onsubmit="app.simpanPasukan(event)">
                     <div class="mb-4">
@@ -194,6 +197,62 @@
                     </div>
 
                     <button type="submit" id="btn_simpan_pasukan" class="w-full bg-green-600 text-white font-bold py-2 px-4 rounded hover:bg-green-700 transition">Daftar Pasukan Ini</button>
+                </form>
+            </section>
+
+            <!-- PAPARAN 6: Borang Kemaskini Pasukan -->
+            <section id="view_kemaskini_pasukan" class="hidden">
+                <button onclick="app.tutupBorangKemaskini()" class="text-gray-600 mb-4 hover:underline text-sm">&larr; Batal & Kembali ke Dashboard</button>
+                <h2 class="text-xl font-bold border-b pb-2 mb-4 bg-yellow-100 p-2 rounded">Kemaskini Maklumat Pasukan</h2>
+                
+                <form id="form_kemaskini_pasukan" onsubmit="app.simpanKemaskiniPasukan(event)">
+                    <input type="hidden" id="edit_pasukan_id">
+                    
+                    <div class="mb-4">
+                        <label class="block text-gray-700 font-bold mb-2">Nama Pasukan:</label>
+                        <input type="text" id="edit_pasukan_nama" required class="w-full px-3 py-2 border rounded-lg" style="text-transform: none;">
+                        <p class="text-xs text-gray-500 mt-1">Boleh guna campuran huruf besar, kecil, nombor dan simbol.</p>
+                    </div>
+
+                    <!-- Maklumat Murid 1 -->
+                    <div class="bg-blue-50 p-4 rounded-lg border mb-4">
+                        <h3 class="font-bold mb-2 border-b border-blue-200">Maklumat Murid 1 (Ketua)</h3>
+                        <div class="mb-2">
+                            <label class="block text-sm font-bold mb-1">Nama Penuh:</label>
+                            <input type="text" id="edit_murid1_nama" required class="w-full px-2 py-1 border rounded uppercase">
+                        </div>
+                        <div class="grid md:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-bold mb-1">No. MYKID / KP:</label>
+                                <input type="text" id="edit_murid1_nokp" required class="w-full px-2 py-1 border rounded">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-bold mb-1">Emel DELIMa:</label>
+                                <input type="email" id="edit_murid1_emel" required class="w-full px-2 py-1 border rounded lowercase">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Maklumat Murid 2 -->
+                    <div class="bg-blue-50 p-4 rounded-lg border mb-6">
+                        <h3 class="font-bold mb-2 border-b border-blue-200">Maklumat Murid 2</h3>
+                        <div class="mb-2">
+                            <label class="block text-sm font-bold mb-1">Nama Penuh:</label>
+                            <input type="text" id="edit_murid2_nama" class="w-full px-2 py-1 border rounded uppercase">
+                        </div>
+                        <div class="grid md:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-bold mb-1">No. MYKID / KP:</label>
+                                <input type="text" id="edit_murid2_nokp" class="w-full px-2 py-1 border rounded">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-bold mb-1">Emel DELIMa:</label>
+                                <input type="email" id="edit_murid2_emel" class="w-full px-2 py-1 border rounded lowercase">
+                            </div>
+                        </div>
+                    </div>
+
+                    <button type="submit" class="w-full bg-yellow-500 text-white font-bold py-2 px-4 rounded hover:bg-yellow-600 transition">Simpan Kemaskini</button>
                 </form>
             </section>
 

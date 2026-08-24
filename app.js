@@ -5,6 +5,7 @@ const appState = {
     kategori: null,
     guru: null, // {id, nama, nokp, notel, emel, pertandingan, kategori_pertandingan}
     pasukanList: [], // Array dari pangkalan data
+    sekolahRawList: [], // Cache untuk semua sekolah (Tujuan carian)
     
     // Constant Imej & Sijil (Lokal)
     logoUrl: "LogoPPDAG.png",
@@ -22,6 +23,7 @@ const viewPilihPertandingan = document.getElementById('view_pilih_pertandingan')
 const viewDaftarGuru = document.getElementById('view_daftar_guru');
 const viewDashboardGuru = document.getElementById('view_dashboard_guru');
 const viewDaftarPasukan = document.getElementById('view_daftar_pasukan');
+const viewKemaskiniPasukan = document.getElementById('view_kemaskini_pasukan');
 const loadingOverlay = document.getElementById('loading_overlay');
 const loadingText = document.getElementById('loading_text');
 
@@ -38,13 +40,8 @@ async function initApp() {
     hideLoading();
 
     if (res.success) {
-        const select = document.getElementById('select_sekolah');
-        res.data.forEach(s => {
-            const opt = document.createElement('option');
-            opt.value = JSON.stringify(s);
-            opt.textContent = `[${s.kod}] ${s.nama}`;
-            select.appendChild(opt);
-        });
+        appState.sekolahRawList = res.data;
+        app.renderSenaraiSekolah();
     } else {
         Swal.fire('Ralat', 'Gagal memuat turun maklumat sekolah. Sila muat semula halaman.', 'error');
     }
@@ -61,6 +58,11 @@ document.getElementById('btn_seterusnya_sekolah').addEventListener('click', () =
     
     viewPilihSekolah.classList.add('hidden');
     viewPilihPertandingan.classList.remove('hidden');
+});
+
+// Carian Sekolah
+document.getElementById('carian_sekolah').addEventListener('keyup', (e) => {
+    app.renderSenaraiSekolah(e.target.value);
 });
 
 // Navigasi Kembali 1
@@ -80,6 +82,24 @@ document.getElementById('btn_back_to_pertandingan').addEventListener('click', ()
 
 // --- APLIKASI CORE LOGIC ---
 const app = {
+
+    renderSenaraiSekolah: (filterText = '') => {
+        const select = document.getElementById('select_sekolah');
+        select.innerHTML = '<option value="">-- SILA PILIH SEKOLAH --</option>';
+        
+        const filterUpper = filterText.toUpperCase();
+        
+        const filteredList = appState.sekolahRawList.filter(s => {
+            return s.nama.includes(filterUpper) || s.kod.includes(filterUpper);
+        });
+
+        filteredList.forEach(s => {
+            const opt = document.createElement('option');
+            opt.value = JSON.stringify(s);
+            opt.textContent = `[${s.kod}] ${s.nama}`;
+            select.appendChild(opt);
+        });
+    },
 
     pilihPertandingan: (jenis) => {
         appState.pertandingan = jenis;
@@ -221,6 +241,7 @@ const app = {
     bukaDashboard: async () => {
         viewDaftarGuru.classList.add('hidden');
         viewDaftarPasukan.classList.add('hidden');
+        viewKemaskiniPasukan.classList.add('hidden');
         viewDashboardGuru.classList.remove('hidden');
 
         document.getElementById('dash_guru_nama').textContent = appState.guru.nama;
@@ -315,6 +336,118 @@ const app = {
             Swal.fire('Ralat', 'Ralat mendaftar pasukan: ' + res.error, 'error');
         }
     },
+    
+    bukaBorangKemaskini: (pasukan_id) => {
+        const pasukan = appState.pasukanList.find(p => p.id === pasukan_id);
+        if (!pasukan) return;
+
+        document.getElementById('edit_pasukan_id').value = pasukan.id;
+        document.getElementById('edit_pasukan_nama').value = pasukan.nama_pasukan;
+
+        const murid1 = pasukan.karnival_murid[0];
+        if (murid1) {
+            document.getElementById('edit_murid1_nama').value = murid1.nama;
+            document.getElementById('edit_murid1_nokp').value = murid1.nokp;
+            document.getElementById('edit_murid1_emel').value = murid1.emel;
+        } else {
+            document.getElementById('edit_murid1_nama').value = '';
+            document.getElementById('edit_murid1_nokp').value = '';
+            document.getElementById('edit_murid1_emel').value = '';
+        }
+
+        const murid2 = pasukan.karnival_murid[1];
+        if (murid2) {
+            document.getElementById('edit_murid2_nama').value = murid2.nama;
+            document.getElementById('edit_murid2_nokp').value = murid2.nokp;
+            document.getElementById('edit_murid2_emel').value = murid2.emel;
+        } else {
+            document.getElementById('edit_murid2_nama').value = '';
+            document.getElementById('edit_murid2_nokp').value = '';
+            document.getElementById('edit_murid2_emel').value = '';
+        }
+
+        viewDashboardGuru.classList.add('hidden');
+        viewKemaskiniPasukan.classList.remove('hidden');
+    },
+
+    tutupBorangKemaskini: () => {
+        viewKemaskiniPasukan.classList.add('hidden');
+        viewDashboardGuru.classList.remove('hidden');
+    },
+
+    simpanKemaskiniPasukan: async (e) => {
+        e.preventDefault();
+
+        const pasukan_id = document.getElementById('edit_pasukan_id').value;
+        const nama_pasukan = document.getElementById('edit_pasukan_nama').value.trim();
+        const m1_emel = document.getElementById('edit_murid1_emel').value.trim().toLowerCase();
+        let m2_emel = document.getElementById('edit_murid2_emel').value.trim().toLowerCase();
+        
+        const m2_nama = document.getElementById('edit_murid2_nama').value.trim().toUpperCase();
+
+        if (!app.semakEmelDelima(m1_emel)) {
+            Swal.fire('Ralat', 'Sila gunakan alamat emel DELIMa yang sah (@moe-dl.edu.my) untuk Murid 1.', 'error');
+            return;
+        }
+        
+        if (m2_nama !== '' && m2_emel !== '' && !app.semakEmelDelima(m2_emel)) {
+            Swal.fire('Ralat', 'Sila gunakan alamat emel DELIMa yang sah (@moe-dl.edu.my) untuk Murid 2.', 'error');
+            return;
+        }
+
+        const murid1 = {
+            nama: document.getElementById('edit_murid1_nama').value.trim().toUpperCase(),
+            nokp: document.getElementById('edit_murid1_nokp').value.trim(),
+            emel: m1_emel
+        };
+
+        let murid2 = null;
+        if (m2_nama !== '') {
+            murid2 = {
+                nama: m2_nama,
+                nokp: document.getElementById('edit_murid2_nokp').value.trim(),
+                emel: m2_emel
+            };
+        }
+
+        showLoading("Menyimpan kemaskini pasukan...");
+        const res = await window.db.kemaskiniPasukan(pasukan_id, nama_pasukan, murid1, murid2);
+        hideLoading();
+
+        if (res.success) {
+            Swal.fire('Berjaya', 'Maklumat pasukan berjaya dikemaskini!', 'success');
+            app.tutupBorangKemaskini();
+            app.loadPasukanList();
+        } else {
+            Swal.fire('Ralat', 'Ralat mengemaskini pasukan: ' + res.error, 'error');
+        }
+    },
+
+    mintaPadamPasukan: async (pasukan_id) => {
+        const result = await Swal.fire({
+            title: 'Anda pasti?',
+            text: "Rekod pasukan ini akan dipadam secara kekal. Tindakan ini tidak boleh dipatahbalik.",
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#d33',
+            cancelButtonColor: '#3085d6',
+            confirmButtonText: 'Ya, padam!',
+            cancelButtonText: 'Batal'
+        });
+
+        if (result.isConfirmed) {
+            showLoading("Memadam rekod pasukan...");
+            const res = await window.db.padamPasukan(pasukan_id);
+            hideLoading();
+
+            if (res.success) {
+                Swal.fire('Berjaya!', 'Rekod pasukan telah dipadam.', 'success');
+                app.loadPasukanList();
+            } else {
+                Swal.fire('Ralat', 'Gagal memadam pasukan: ' + res.error, 'error');
+            }
+        }
+    },
 
     renderPasukanList: () => {
         const container = document.getElementById('senarai_pasukan_container');
@@ -330,6 +463,17 @@ const app = {
             let statusHTML = isDisahkan 
                 ? `<span class="bg-green-100 text-green-800 text-xs font-semibold px-2 py-1 rounded">Disahkan Oleh Admin</span>` 
                 : `<span class="bg-yellow-100 text-yellow-800 text-xs font-semibold px-2 py-1 rounded">Menunggu Semakan</span>`;
+
+            // Butang Edit/Padam hanya muncul jika belum disahkan
+            let editDeleteUI = '';
+            if (!isDisahkan) {
+                editDeleteUI = `
+                    <div class="flex gap-2">
+                        <button onclick="app.bukaBorangKemaskini('${pasukan.id}')" class="text-sm bg-yellow-500 hover:bg-yellow-600 text-white px-3 py-1 rounded transition">✏️ Edit</button>
+                        <button onclick="app.mintaPadamPasukan('${pasukan.id}')" class="text-sm bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded transition">🗑️ Padam</button>
+                    </div>
+                `;
+            }
 
             let actionUI = '';
             if (appState.pertandingan === 'Animasi AI') {
@@ -373,12 +517,15 @@ const app = {
 
             const html = `
                 <div class="bg-white border rounded-lg p-4 shadow-sm hover:shadow-md transition">
-                    <div class="flex justify-between items-start mb-2">
-                        <h4 class="font-bold text-lg text-gray-800">${index + 1}. ${pasukan.nama_pasukan}</h4>
-                        ${statusHTML}
+                    <div class="flex flex-col md:flex-row md:justify-between md:items-start gap-2 mb-2">
+                        <div>
+                            <h4 class="font-bold text-lg text-gray-800">${index + 1}. ${pasukan.nama_pasukan}</h4>
+                            <div class="mt-1">${statusHTML}</div>
+                        </div>
+                        ${editDeleteUI}
                     </div>
                     
-                    <ul class="text-sm text-gray-600 list-disc list-inside mb-2">
+                    <ul class="text-sm text-gray-600 list-disc list-inside mb-2 mt-2">
                         ${pasukan.karnival_murid.map(m => `<li>${m.nama} (${m.nokp})</li>`).join('')}
                     </ul>
 
