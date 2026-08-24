@@ -791,7 +791,7 @@ const app = {
                 doc.text(splitTitle, lebarA4/2, 150, { align: "center" });
 
                 // Kira kedudukan Y seterusnya berdasarkan bilangan baris tajuk
-                const nextY = 150 + (splitTitle.length * 6);
+                let nextY = 150 + (splitTitle.length * 6);
 
                 doc.setFont("helvetica", "normal");
                 doc.setFontSize(11);
@@ -799,6 +799,21 @@ const app = {
                 const desc = `Sempena Karnival Pendidikan Madani PPD Alor Gajah`;
                 const splitDesc = doc.splitTextToSize(desc, lebarA4 - 40);
                 doc.text(splitDesc, lebarA4/2, nextY, { align: "center" });
+                
+                // Menambah maklumat tarikh berdasarkan jenis pertandingan
+                nextY += 10; // Jarak sebelum tarikh
+                let teksTarikh = "";
+                if (appState.pertandingan === 'Animasi AI') {
+                    teksTarikh = "25 Ogos 2026 hingga 15 September 2026";
+                } else if (appState.pertandingan === 'Mikrobotik') {
+                    teksTarikh = "26 Ogos 2026 hingga 16 September 2026";
+                }
+
+                if (teksTarikh) {
+                    doc.setFont("helvetica", "bold");
+                    doc.setFontSize(11);
+                    doc.text(teksTarikh, lebarA4/2, nextY, { align: "center" });
+                }
 
                 if (appState.imgSignBase64) {
                     try {
