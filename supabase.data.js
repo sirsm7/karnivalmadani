@@ -36,7 +36,7 @@ const db = {
         }
     },
 
-    // 3. Semak Guru (Jika guru telah daftar untuk sekolah dan pertandingan tertentu)
+    // 3. Semak Guru (Jika guru telah daftar untuk sekolah dan pertandingan tertentu) [TIDAK DIGUNAKAN LAGI UNTUK LOGIN BARU, DIKEKALKAN UNTUK KESESUAIAN]
     async semakGuruExist(sekolah_id, nokp, pertandingan) {
         try {
             const { data, error } = await supabaseClient
@@ -51,6 +51,46 @@ const db = {
             return { success: true, data: data }; // data akan jadi null jika tiada rekod
         } catch (error) {
             console.error("Ralat semakGuruExist:", error);
+            return { success: false, error: error.message };
+        }
+    },
+
+    // 3.1 Dapatkan Senarai Guru untuk Sekolah dan Pertandingan tertentu (Tanpa Data Peribadi)
+    async getSenaraiGuruBagiSekolahPertandingan(sekolah_id, pertandingan) {
+        try {
+            const { data, error } = await supabaseClient
+                .from('karnival_guru')
+                .select(`
+                    id, 
+                    nama, 
+                    kategori_pertandingan, 
+                    karnival_pasukan ( id )
+                `)
+                .eq('sekolah_id', sekolah_id)
+                .eq('pertandingan', pertandingan);
+            
+            if (error) throw error; 
+            return { success: true, data: data };
+        } catch (error) {
+            console.error("Ralat getSenaraiGuruBagiSekolahPertandingan:", error);
+            return { success: false, error: error.message };
+        }
+    },
+
+    // 3.2 Semak No KP untuk Login Kad Guru
+    async semakGuruDanLogin(guru_id, nokp) {
+        try {
+            const { data, error } = await supabaseClient
+                .from('karnival_guru')
+                .select('*, karnival_sekolah(kod, nama)')
+                .eq('id', guru_id)
+                .eq('nokp', nokp)
+                .maybeSingle();
+            
+            if (error) throw error; 
+            return { success: true, data: data };
+        } catch (error) {
+            console.error("Ralat semakGuruDanLogin:", error);
             return { success: false, error: error.message };
         }
     },

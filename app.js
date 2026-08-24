@@ -137,7 +137,7 @@ const app = {
         dropdownSekolah.classList.add('hidden');
     },
 
-    pilihPertandingan: (jenis) => {
+    pilihPertandingan: async (jenis) => {
         appState.pertandingan = jenis;
         
         const selectKategori = document.getElementById('guru_kategori');
@@ -167,42 +167,108 @@ const app = {
 
         document.getElementById('tajuk_borang_guru').textContent = `Daftar Guru: ${jenis} 2026`;
         
-        // Reset borang log masuk jika ada input sebelum ini
-        const loginInput = document.getElementById('login_nokp');
-        if(loginInput) loginInput.value = '';
+        // Muat senarai guru sedia ada
+        showLoading("Menyemak rekod guru berdaftar...");
+        const res = await window.db.getSenaraiGuruBagiSekolahPertandingan(appState.sekolah.id, jenis);
+        hideLoading();
+        
+        if (res.success) {
+            app.renderSenaraiGuru(res.data);
+        } else {
+            console.error("Gagal muat senarai guru", res.error);
+            document.getElementById('container_kad_guru').innerHTML = ''; // Kosongkan jika ralat
+        }
 
         viewPilihPertandingan.classList.add('hidden');
         viewDaftarGuru.classList.remove('hidden');
     },
 
-    semakEmelDelima: (emel) => {
-        return emel.toLowerCase().endsWith('@moe-dl.edu.my');
-    },
+    renderSenaraiGuru: (senaraiGuru) => {
+        const container = document.getElementById('container_kad_guru');
+        container.innerHTML = '';
 
-    // Fungsi Log Masuk Guru Sedia Ada
-    loginGuruSediaAda: async (e) => {
-        e.preventDefault();
-        const nokp = document.getElementById('login_nokp').value.trim();
-
-        if (!nokp) {
-            Swal.fire('Peringatan', 'Sila masukkan No. Kad Pengenalan.', 'warning');
+        if (!senaraiGuru || senaraiGuru.length === 0) {
+            // Jika tiada guru berdaftar
+            const el = document.createElement('div');
+            el.className = "bg-blue-50 border border-blue-200 text-blue-800 p-4 rounded-lg text-sm text-center italic mb-4";
+            el.textContent = "Tiada guru pembimbing mendaftar dari sekolah ini untuk pertandingan yang dipilih. Sila isi borang pendaftaran baru di bawah.";
+            container.appendChild(el);
             return;
         }
-
-        showLoading("Menyemak rekod guru...");
         
-        const semakRes = await window.db.semakGuruExist(appState.sekolah.id, nokp, appState.pertandingan);
-        
-        hideLoading();
+        // Ada guru
+        const titleEl = document.createElement('h3');
+        titleEl.className = "font-bold text-indigo-800 mb-2";
+        titleEl.textContent = "Guru Yang Telah Mendaftar (Klik Untuk Log Masuk)";
+        container.appendChild(titleEl);
 
-        if (semakRes.success && semakRes.data) {
-            appState.guru = semakRes.data;
-            app.bukaDashboard();
-        } else {
-            Swal.fire('Maklumat', 'Tiada rekod pendaftaran ditemui untuk No. KP ini bagi sekolah dan pertandingan yang dipilih. Sila isi borang DAFTAR BARU di bawah.', 'info');
-            document.getElementById('guru_nokp').value = nokp; // Pindahkan ke form daftar baru
-            document.getElementById('guru_nama').focus();
+        const grid = document.createElement('div');
+        grid.className = "grid md:grid-cols-2 gap-4";
+
+        senaraiGuru.forEach(guru => {
+            const countPasukan = guru.karnival_pasukan ? guru.karnival_pasukan.length : 0;
+            
+            const card = document.createElement('div');
+            card.className = "bg-white border-2 border-indigo-100 p-4 rounded-lg shadow-sm hover:shadow-md hover:border-indigo-400 cursor-pointer transition flex items-center gap-4";
+            card.onclick = () => app.promptLoginGuru(guru.id, guru.nama);
+            
+            card.innerHTML = `
+                <div class="bg-indigo-100 text-indigo-600 rounded-full h-12 w-12 flex items-center justify-center flex-shrink-0 font-bold text-xl">
+                    ${guru.nama.charAt(0).toUpperCase()}
+                </div>
+                <div>
+                    <h4 class="font-bold text-gray-800 leading-tight">${guru.nama}</h4>
+                    <p class="text-xs text-gray-500 mt-1">${guru.kategori_pertandingan}</p>
+                    <div class="mt-1">
+                        <span class="inline-block bg-blue-100 text-blue-800 text-xs px-2 py-0.5 rounded font-semibold">
+                            ${countPasukan} Pasukan Didaftarkan
+                        </span>
+                    </div>
+                </div>
+            `;
+            grid.appendChild(card);
+        });
+
+        container.appendChild(grid);
+    },
+
+    promptLoginGuru: async (guru_id, guru_nama) => {
+        const { value: nokp } = await Swal.fire({
+            title: 'Pengesahan Log Masuk',
+            html: `Sila masukkan <b>No. Kad Pengenalan</b> anda (tanpa sengkang) untuk log masuk sebagai:<br><br><span class="font-bold text-indigo-600">${guru_nama}</span>`,
+            input: 'text',
+            inputPlaceholder: 'Contoh: 880101015566',
+            inputAttributes: {
+                maxlength: 12,
+                autocapitalize: 'off',
+                autocorrect: 'off'
+            },
+            showCancelButton: true,
+            confirmButtonText: 'Log Masuk',
+            cancelButtonText: 'Batal',
+            inputValidator: (value) => {
+                if (!value) {
+                    return 'Anda perlu memasukkan No. Kad Pengenalan!';
+                }
+            }
+        });
+
+        if (nokp) {
+            showLoading("Mengesahkan maklumat log masuk...");
+            const res = await window.db.semakGuruDanLogin(guru_id, nokp.trim());
+            hideLoading();
+            
+            if (res.success && res.data) {
+                appState.guru = res.data;
+                app.bukaDashboard();
+            } else {
+                Swal.fire('Ralat Pengesahan', 'No. Kad Pengenalan yang dimasukkan tidak sepadan dengan rekod guru ini.', 'error');
+            }
         }
+    },
+
+    semakEmelDelima: (emel) => {
+        return emel.toLowerCase().endsWith('@moe-dl.edu.my');
     },
 
     simpanGuru: async (e) => {
@@ -266,10 +332,18 @@ const app = {
             appState.guru = null;
             appState.pasukanList = [];
             document.getElementById('form_guru').reset();
-            const loginInput = document.getElementById('login_nokp');
-            if (loginInput) loginInput.value = '';
             
             viewDashboardGuru.classList.add('hidden');
+            
+            // Muat semula senarai guru untuk paparan yang dikemaskini
+            showLoading("Memuat semula senarai...");
+            const res = await window.db.getSenaraiGuruBagiSekolahPertandingan(appState.sekolah.id, appState.pertandingan);
+            hideLoading();
+            
+            if (res.success) {
+                app.renderSenaraiGuru(res.data);
+            }
+            
             viewDaftarGuru.classList.remove('hidden');
         }
     },
@@ -343,8 +417,8 @@ const app = {
         const m1_emel = document.getElementById('murid1_emel').value.trim().toLowerCase();
         const m2_emel = document.getElementById('murid2_emel').value.trim().toLowerCase();
 
-        if (!app.semakEmelDelima(m1_emel) || !app.semakEmelDelima(m2_emel)) {
-            Swal.fire('Ralat', 'Sila gunakan alamat emel DELIMa yang sah (@moe-dl.edu.my) untuk kedua-dua murid.', 'error');
+        if (!app.semakEmelDelima(m1_emel) || (m2_emel !== '' && !app.semakEmelDelima(m2_emel))) {
+            Swal.fire('Ralat', 'Sila gunakan alamat emel DELIMa yang sah (@moe-dl.edu.my) untuk murid yang mendaftar.', 'error');
             return;
         }
 
@@ -354,11 +428,15 @@ const app = {
             emel: m1_emel
         };
 
-        const murid2 = {
-            nama: document.getElementById('murid2_nama').value.trim().toUpperCase(),
-            nokp: document.getElementById('murid2_nokp').value.trim(),
-            emel: m2_emel
-        };
+        const m2_nama = document.getElementById('murid2_nama').value.trim().toUpperCase();
+        let murid2 = null;
+        if (m2_nama !== '') {
+            murid2 = {
+                nama: m2_nama,
+                nokp: document.getElementById('murid2_nokp').value.trim(),
+                emel: m2_emel
+            };
+        }
 
         showLoading("Mendaftarkan pasukan...");
         const res = await window.db.daftarPasukan(appState.guru.id, nama_pasukan, murid1, murid2);

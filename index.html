@@ -76,49 +76,44 @@
                 <button id="btn_back_to_pertandingan" class="text-blue-600 mb-4 hover:underline text-sm">&larr; Kembali pilih pertandingan</button>
                 <h2 class="text-xl font-bold border-b pb-2 mb-4 text-indigo-700" id="tajuk_borang_guru">Maklumat Guru Pembimbing</h2>
                 
-                <!-- Log Masuk Guru Sedia Ada -->
-                <div class="bg-indigo-50 p-4 rounded-lg border border-indigo-200 mb-6">
-                    <h3 class="font-bold text-indigo-800 mb-2">Telah Mendaftar? Log Masuk Di Sini</h3>
-                    <p class="text-sm text-gray-600 mb-3">Jika anda telah mendaftar sebagai guru pembimbing untuk pertandingan ini, masukkan No. Kad Pengenalan anda untuk mengakses dashboard pasukan.</p>
-                    <form id="form_login_guru" onsubmit="app.loginGuruSediaAda(event)" class="flex gap-2">
-                        <input type="text" id="login_nokp" required maxlength="12" placeholder="No. KP (Cth: 880101015566)" class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500">
-                        <button type="submit" class="bg-indigo-600 text-white font-bold py-2 px-4 rounded hover:bg-indigo-700 transition whitespace-nowrap">Log Masuk</button>
-                    </form>
+                <!-- Kontena Senarai Guru Sedia Ada (Kad Profil) -->
+                <div id="container_kad_guru" class="mb-6">
+                    <!-- Senarai kad guru akan di-render di sini oleh JS -->
                 </div>
 
                 <div class="flex items-center my-6">
                     <div class="flex-grow border-t border-gray-300"></div>
-                    <span class="flex-shrink-0 mx-4 text-gray-400 text-sm font-bold">ATAU DAFTAR BARU</span>
+                    <span class="flex-shrink-0 mx-4 text-gray-400 text-sm font-bold">ATAU DAFTAR BARU SEBAGAI GURU PEMBIMBING</span>
                     <div class="flex-grow border-t border-gray-300"></div>
                 </div>
 
                 <!-- Borang Pendaftaran Guru Baru -->
-                <form id="form_guru" onsubmit="app.simpanGuru(event)">
+                <form id="form_guru" onsubmit="app.simpanGuru(event)" class="bg-white p-4 rounded-lg border shadow-sm">
                     <div class="mb-4">
                         <label class="block text-gray-700 font-bold mb-2">Nama Guru Pembimbing:</label>
-                        <input type="text" id="guru_nama" required class="w-full px-3 py-2 border rounded-lg uppercase">
+                        <input type="text" id="guru_nama" required class="w-full px-3 py-2 border rounded-lg uppercase bg-gray-50 focus:bg-white">
                     </div>
                     <div class="grid md:grid-cols-2 gap-4 mb-4">
                         <div>
                             <label class="block text-gray-700 font-bold mb-2">No. Kad Pengenalan:</label>
-                            <input type="text" id="guru_nokp" required maxlength="12" placeholder="Contoh: 880101015566" class="w-full px-3 py-2 border rounded-lg">
+                            <input type="text" id="guru_nokp" required maxlength="12" placeholder="Contoh: 880101015566" class="w-full px-3 py-2 border rounded-lg bg-gray-50 focus:bg-white">
                         </div>
                         <div>
                             <label class="block text-gray-700 font-bold mb-2">No. Telefon:</label>
-                            <input type="text" id="guru_notel" required class="w-full px-3 py-2 border rounded-lg">
+                            <input type="text" id="guru_notel" required class="w-full px-3 py-2 border rounded-lg bg-gray-50 focus:bg-white">
                         </div>
                     </div>
                     <div class="mb-4">
                         <label class="block text-gray-700 font-bold mb-2">Alamat Emel DELIMa:</label>
-                        <input type="email" id="guru_emel" required placeholder="g-xxxx@moe-dl.edu.my" class="w-full px-3 py-2 border rounded-lg lowercase">
+                        <input type="email" id="guru_emel" required placeholder="g-xxxx@moe-dl.edu.my" class="w-full px-3 py-2 border rounded-lg lowercase bg-gray-50 focus:bg-white">
                     </div>
                     <div class="mb-6">
                         <label class="block text-gray-700 font-bold mb-2">Kategori Pertandingan:</label>
-                        <select id="guru_kategori" required class="w-full px-3 py-2 border rounded-lg">
+                        <select id="guru_kategori" required class="w-full px-3 py-2 border rounded-lg bg-gray-50 focus:bg-white">
                             <!-- Kategori akan di-populate berdasarkan pertandingan -->
                         </select>
                     </div>
-                    <button type="submit" id="btn_simpan_guru" class="w-full bg-green-600 text-white font-bold py-2 px-4 rounded hover:bg-green-700 transition">Daftar Guru Baru & Teruskan</button>
+                    <button type="submit" id="btn_simpan_guru" class="w-full bg-indigo-600 text-white font-bold py-3 px-4 rounded-lg hover:bg-indigo-700 transition shadow-md">Daftar Sebagai Guru Baru</button>
                 </form>
             </section>
 
@@ -126,25 +121,25 @@
             <section id="view_dashboard_guru" class="hidden">
                 <div class="flex justify-between items-center border-b pb-2 mb-4">
                     <h2 class="text-xl font-bold text-gray-800">Dashboard Pengurusan Pasukan</h2>
-                    <button onclick="app.logoutGuru()" class="text-red-500 text-sm hover:underline">Keluar</button>
+                    <button onclick="app.logoutGuru()" class="text-red-500 text-sm hover:underline font-bold bg-red-50 px-2 py-1 rounded">Keluar</button>
                 </div>
                 
-                <div class="bg-gray-50 p-4 rounded-lg mb-6 border">
-                    <p class="text-sm"><strong>Guru:</strong> <span id="dash_guru_nama"></span></p>
-                    <p class="text-sm"><strong>Sekolah:</strong> <span id="dash_sekolah_nama"></span></p>
-                    <p class="text-sm"><strong>Pertandingan:</strong> <span id="dash_pertandingan"></span> - <span id="dash_kategori"></span></p>
+                <div class="bg-indigo-50 p-4 rounded-lg mb-6 border border-indigo-100">
+                    <p class="text-sm"><strong>Guru:</strong> <span id="dash_guru_nama" class="font-bold"></span></p>
+                    <p class="text-sm"><strong>Sekolah:</strong> <span id="dash_sekolah_nama" class="font-bold"></span></p>
+                    <p class="text-sm"><strong>Pertandingan:</strong> <span id="dash_pertandingan" class="font-bold text-indigo-700"></span> - <span id="dash_kategori" class="font-bold"></span></p>
                 </div>
 
                 <div class="flex flex-wrap gap-2 mb-6">
-                    <button onclick="app.bukaBorangPasukan()" id="btn_tambah_pasukan" class="bg-blue-600 text-white font-bold py-2 px-4 rounded hover:bg-blue-700 text-sm">
+                    <button onclick="app.bukaBorangPasukan()" id="btn_tambah_pasukan" class="bg-blue-600 text-white font-bold py-2 px-4 rounded hover:bg-blue-700 text-sm shadow">
                         + Daftar Pasukan Baru (<span id="count_pasukan">0</span>/10)
                     </button>
-                    <a id="link_youtube" href="#" target="_blank" class="bg-red-600 text-white font-bold py-2 px-4 rounded hover:bg-red-700 text-sm">
+                    <a id="link_youtube" href="#" target="_blank" class="bg-red-600 text-white font-bold py-2 px-4 rounded hover:bg-red-700 text-sm shadow">
                         &#9654; Tonton Taklimat YouTube
                     </a>
                 </div>
 
-                <h3 class="font-bold text-lg mb-2">Senarai Pasukan Berdaftar:</h3>
+                <h3 class="font-bold text-lg mb-2 border-b pb-1">Senarai Pasukan Berdaftar:</h3>
                 <div id="senarai_pasukan_container" class="space-y-4">
                     <!-- Senarai pasukan akan di-render di sini -->
                 </div>
@@ -152,8 +147,8 @@
 
             <!-- PAPARAN 5: Borang Daftar Pasukan -->
             <section id="view_daftar_pasukan" class="hidden">
-                <button onclick="app.tutupBorangPasukan()" class="text-gray-600 mb-4 hover:underline text-sm">&larr; Batal & Kembali ke Dashboard</button>
-                <h2 class="text-xl font-bold border-b pb-2 mb-4 bg-green-100 p-2 rounded">Borang Pendaftaran Pasukan Baru</h2>
+                <button onclick="app.tutupBorangPasukan()" class="text-gray-600 mb-4 hover:underline text-sm bg-gray-100 px-3 py-1 rounded">&larr; Batal & Kembali ke Dashboard</button>
+                <h2 class="text-xl font-bold border-b pb-2 mb-4 text-green-700">Borang Pendaftaran Pasukan Baru</h2>
                 
                 <form id="form_pasukan" onsubmit="app.simpanPasukan(event)">
                     <div class="mb-4">
@@ -163,8 +158,8 @@
                     </div>
 
                     <!-- Maklumat Murid 1 -->
-                    <div class="bg-blue-50 p-4 rounded-lg border mb-4">
-                        <h3 class="font-bold mb-2 border-b border-blue-200">Maklumat Murid 1 (Ketua)</h3>
+                    <div class="bg-blue-50 p-4 rounded-lg border border-blue-200 mb-4 shadow-sm">
+                        <h3 class="font-bold mb-2 border-b border-blue-200 pb-1 text-blue-800">Maklumat Murid 1 (Ketua)</h3>
                         <div class="mb-2">
                             <label class="block text-sm font-bold mb-1">Nama Penuh:</label>
                             <input type="text" id="murid1_nama" required class="w-full px-2 py-1 border rounded uppercase">
@@ -182,8 +177,8 @@
                     </div>
 
                     <!-- Maklumat Murid 2 -->
-                    <div class="bg-blue-50 p-4 rounded-lg border mb-6">
-                        <h3 class="font-bold mb-2 border-b border-blue-200">Maklumat Murid 2</h3>
+                    <div class="bg-blue-50 p-4 rounded-lg border border-blue-200 mb-6 shadow-sm">
+                        <h3 class="font-bold mb-2 border-b border-blue-200 pb-1 text-blue-800">Maklumat Murid 2</h3>
                         <div class="mb-2">
                             <label class="block text-sm font-bold mb-1">Nama Penuh:</label>
                             <input type="text" id="murid2_nama" class="w-full px-2 py-1 border rounded uppercase">
@@ -200,14 +195,14 @@
                         </div>
                     </div>
 
-                    <button type="submit" id="btn_simpan_pasukan" class="w-full bg-green-600 text-white font-bold py-2 px-4 rounded hover:bg-green-700 transition">Daftar Pasukan Ini</button>
+                    <button type="submit" id="btn_simpan_pasukan" class="w-full bg-green-600 text-white font-bold py-3 px-4 rounded-lg hover:bg-green-700 transition shadow">Daftar Pasukan Ini</button>
                 </form>
             </section>
 
             <!-- PAPARAN 6: Borang Kemaskini Pasukan -->
             <section id="view_kemaskini_pasukan" class="hidden">
-                <button onclick="app.tutupBorangKemaskini()" class="text-gray-600 mb-4 hover:underline text-sm">&larr; Batal & Kembali ke Dashboard</button>
-                <h2 class="text-xl font-bold border-b pb-2 mb-4 bg-yellow-100 p-2 rounded">Kemaskini Maklumat Pasukan</h2>
+                <button onclick="app.tutupBorangKemaskini()" class="text-gray-600 mb-4 hover:underline text-sm bg-gray-100 px-3 py-1 rounded">&larr; Batal & Kembali ke Dashboard</button>
+                <h2 class="text-xl font-bold border-b pb-2 mb-4 text-yellow-700">Kemaskini Maklumat Pasukan</h2>
                 
                 <form id="form_kemaskini_pasukan" onsubmit="app.simpanKemaskiniPasukan(event)">
                     <input type="hidden" id="edit_pasukan_id">
@@ -219,8 +214,8 @@
                     </div>
 
                     <!-- Maklumat Murid 1 -->
-                    <div class="bg-blue-50 p-4 rounded-lg border mb-4">
-                        <h3 class="font-bold mb-2 border-b border-blue-200">Maklumat Murid 1 (Ketua)</h3>
+                    <div class="bg-blue-50 p-4 rounded-lg border border-blue-200 mb-4 shadow-sm">
+                        <h3 class="font-bold mb-2 border-b border-blue-200 pb-1 text-blue-800">Maklumat Murid 1 (Ketua)</h3>
                         <div class="mb-2">
                             <label class="block text-sm font-bold mb-1">Nama Penuh:</label>
                             <input type="text" id="edit_murid1_nama" required class="w-full px-2 py-1 border rounded uppercase">
@@ -238,8 +233,8 @@
                     </div>
 
                     <!-- Maklumat Murid 2 -->
-                    <div class="bg-blue-50 p-4 rounded-lg border mb-6">
-                        <h3 class="font-bold mb-2 border-b border-blue-200">Maklumat Murid 2</h3>
+                    <div class="bg-blue-50 p-4 rounded-lg border border-blue-200 mb-6 shadow-sm">
+                        <h3 class="font-bold mb-2 border-b border-blue-200 pb-1 text-blue-800">Maklumat Murid 2</h3>
                         <div class="mb-2">
                             <label class="block text-sm font-bold mb-1">Nama Penuh:</label>
                             <input type="text" id="edit_murid2_nama" class="w-full px-2 py-1 border rounded uppercase">
@@ -256,7 +251,7 @@
                         </div>
                     </div>
 
-                    <button type="submit" class="w-full bg-yellow-500 text-white font-bold py-2 px-4 rounded hover:bg-yellow-600 transition">Simpan Kemaskini</button>
+                    <button type="submit" class="w-full bg-yellow-500 text-white font-bold py-3 px-4 rounded-lg hover:bg-yellow-600 transition shadow">Simpan Kemaskini</button>
                 </form>
             </section>
 
@@ -272,8 +267,8 @@
     <!-- Loading Overlay -->
     <div id="loading_overlay" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden flex items-center justify-center">
         <div class="bg-white p-6 rounded-lg shadow-lg text-center">
-            <div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 mb-4"></div>
-            <p id="loading_text" class="font-bold">Memproses...</p>
+            <div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600 mb-4"></div>
+            <p id="loading_text" class="font-bold text-gray-800">Memproses...</p>
         </div>
     </div>
 
