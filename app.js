@@ -391,6 +391,14 @@ const app = {
                 btnTambah.innerHTML = `+ Daftar Pasukan Baru (<span id="count_pasukan">${appState.pasukanList.length}</span>/10)`;
             }
 
+            // Tunjukkan butang sijil kehadiran jika tiada pasukan
+            const containerSijilKehadiran = document.getElementById('container_sijil_kehadiran');
+            if (appState.pasukanList.length === 0) {
+                containerSijilKehadiran.classList.remove('hidden');
+            } else {
+                containerSijilKehadiran.classList.add('hidden');
+            }
+
             app.renderPasukanList();
         } else {
             Swal.fire('Ralat', 'Ralat memuatkan senarai pasukan: ' + res.error, 'error');
@@ -872,6 +880,151 @@ const app = {
             console.error(error);
             hideLoading();
             Swal.fire('Ralat', 'Ralat semasa menjana sijil. Sila pastikan pelayar anda menyokong penjanaan fail.', 'error');
+        }
+    },
+    
+    janaSijilKehadiranGuru: async () => {
+        if (!appState.guru) return;
+
+        showLoading("Memproses Sijil Kehadiran...");
+        
+        try {
+            const { jsPDF } = window.jspdf;
+            
+            const doc = new jsPDF({
+                orientation: 'landscape',
+                format: 'a4'
+            });
+
+            if (appState.fontGreatVibesBase64) {
+                doc.addFileToVFS("GreatVibes-Regular.ttf", appState.fontGreatVibesBase64);
+                doc.addFont("GreatVibes-Regular.ttf", "GreatVibes", "normal");
+            }
+
+            const lebarA4 = 297;
+            const tinggiA4 = 210;
+
+            // LUKIS LATAR BELAKANG
+            if (appState.imgBorderBase64) {
+                try {
+                    doc.addImage(appState.imgBorderBase64, 'PNG', 0, 0, lebarA4, tinggiA4);
+                } catch (e) {
+                    console.warn("Gagal melukis border background di PDF", e);
+                }
+            }
+
+            // LUKIS LOGO
+            if (appState.imgLogoBase64) {
+                try {
+                    doc.addImage(appState.imgLogoBase64, 'PNG', lebarA4/2 - 20, 25, 40, 26);
+                } catch (e) {
+                    console.warn("Gagal melukis logo di PDF", e);
+                }
+            }
+
+            // TAJUK SIJIL (Sijil Kehadiran)
+            if (appState.fontGreatVibesBase64) {
+                doc.setFont("GreatVibes", "normal");
+                doc.setFontSize(52);
+                doc.setTextColor(220, 38, 38); 
+            } else {
+                doc.setFont("helvetica", "bold");
+                doc.setFontSize(28);
+                doc.setTextColor(30, 64, 175);
+            }
+            
+            const titleText = appState.fontGreatVibesBase64 ? "Sijil Kehadiran" : "SIJIL KEHADIRAN";
+            doc.text(titleText, lebarA4/2, 65, { align: "center" });
+
+            // TEKS PENGESAHAN
+            doc.setFont("helvetica", "normal");
+            doc.setFontSize(12);
+            doc.setTextColor(50, 50, 50);
+            doc.text("Dengan ini disahkan bahawa", lebarA4/2, 80, { align: "center" });
+
+            // NAMA GURU
+            doc.setFont("helvetica", "bold");
+            doc.setFontSize(16);
+            doc.setTextColor(0, 0, 0);
+            doc.text(appState.guru.nama.toUpperCase(), lebarA4/2, 90, { align: "center" });
+
+            // PERANAN DAN SEKOLAH
+            doc.setFont("helvetica", "normal");
+            doc.setFontSize(12);
+            doc.text(`Telah hadir dan mendaftar sebagai GURU PEMBIMBING mewakili`, lebarA4/2, 105, { align: "center" });
+            
+            doc.setFont("helvetica", "bold");
+            doc.setFontSize(14);
+            doc.text(appState.sekolah.nama.toUpperCase(), lebarA4/2, 115, { align: "center" });
+
+            doc.setFont("helvetica", "normal");
+            doc.setFontSize(12);
+            doc.text(`untuk sesi taklimat`, lebarA4/2, 130, { align: "center" });
+
+            // TAJUK PERTANDINGAN
+            doc.setFont("helvetica", "bold");
+            doc.setFontSize(14);
+            doc.setTextColor(185, 28, 28);
+            let tajukPert = appState.pertandingan === 'Animasi AI' ? "Pertandingan Video Animasi AI Kemerdekaan 2026" : "Pertandingan Robotik: Mikrobotik 2026";
+            
+            const splitTitle = doc.splitTextToSize(tajukPert.toUpperCase(), lebarA4 - 60);
+            doc.text(splitTitle, lebarA4/2, 140, { align: "center" });
+
+            let nextY = 140 + (splitTitle.length * 6);
+
+            // PENERANGAN
+            doc.setFont("helvetica", "normal");
+            doc.setFontSize(11);
+            doc.setTextColor(50, 50, 50);
+            const desc = `Sempena Karnival Pendidikan Madani PPD Alor Gajah pada`;
+            const splitDesc = doc.splitTextToSize(desc, lebarA4 - 60);
+            doc.text(splitDesc, lebarA4/2, nextY, { align: "center" });
+            
+            // TARIKH SPESIFIK BERDASARKAN PERTANDINGAN (KEHADIRAN SAHAJA)
+            nextY += 8;
+            let teksTarikh = "";
+            if (appState.pertandingan === 'Animasi AI') {
+                teksTarikh = "25 September 2026";
+            } else if (appState.pertandingan === 'Mikrobotik') {
+                teksTarikh = "26 September 2026";
+            }
+
+            if (teksTarikh) {
+                doc.setFont("helvetica", "bold");
+                doc.setFontSize(11);
+                doc.text(teksTarikh, lebarA4/2, nextY, { align: "center" });
+            }
+
+            // LUKIS TANDATANGAN
+            if (appState.imgSignBase64) {
+                try {
+                    doc.addImage(appState.imgSignBase64, 'PNG', lebarA4/2 - 40, 165, 80, 32);
+                } catch (e) {
+                     console.warn("Gagal melukis tandatangan di PDF", e);
+                }
+            }
+
+            hideLoading();
+
+            const result = await Swal.fire({
+                title: 'Sijil Selesai Dijana',
+                text: 'Sijil Kehadiran sedia untuk dimuat turun dan dicetak.',
+                icon: 'success',
+                showCancelButton: true,
+                confirmButtonText: 'Muat Turun PDF',
+                cancelButtonText: 'Batal',
+                confirmButtonColor: '#9333ea', 
+                cancelButtonColor: '#6b7280'   
+            });
+
+            if (result.isConfirmed) {
+                doc.save(`Sijil_Kehadiran_Guru_${appState.guru.nama.replace(/\s+/g, '_')}.pdf`);
+            }
+
+        } catch (error) {
+            console.error(error);
+            hideLoading();
+            Swal.fire('Ralat', 'Ralat semasa menjana sijil kehadiran. Sila pastikan pelayar anda menyokong penjanaan fail.', 'error');
         }
     }
 };
