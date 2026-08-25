@@ -362,10 +362,14 @@ const app = {
         document.getElementById('dash_kategori').textContent = appState.guru.kategori_pertandingan;
 
         const ytLink = document.getElementById('link_youtube');
+        const gemBtn = document.getElementById('btn_gem');
+
         if (appState.pertandingan === 'Animasi AI') {
             ytLink.href = YOUTUBE_ANIMASI;
+            gemBtn.classList.remove('hidden'); // Papar butang GEM
         } else {
             ytLink.href = YOUTUBE_MIKROBOTIK;
+            gemBtn.classList.add('hidden'); // Sembunyi butang GEM
         }
 
         await app.loadPasukanList();
