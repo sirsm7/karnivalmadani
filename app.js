@@ -21,7 +21,6 @@ const appState = {
 
 // --- DOM ELEMENTS ---
 const viewPilihSekolah = document.getElementById('view_pilih_sekolah');
-const viewPilihPertandingan = document.getElementById('view_pilih_pertandingan');
 const viewDaftarGuru = document.getElementById('view_daftar_guru');
 const viewDashboardGuru = document.getElementById('view_dashboard_guru');
 const viewDaftarPasukan = document.getElementById('view_daftar_pasukan');
@@ -58,8 +57,9 @@ document.getElementById('btn_seterusnya_sekolah').addEventListener('click', () =
         return;
     }
     
+    // Skip 'Pilih Pertandingan' and go directly to 'Daftar Guru' for 'Animasi AI'
     viewPilihSekolah.classList.add('hidden');
-    viewPilihPertandingan.classList.remove('hidden');
+    app.pilihPertandingan('Animasi AI');
 });
 
 // Carian Sekolah - Tunjuk dropdown bila fokus
@@ -84,19 +84,13 @@ document.addEventListener('click', (e) => {
     }
 });
 
-// Navigasi Kembali 1
-document.getElementById('btn_back_to_sekolah').addEventListener('click', () => {
+// Navigasi Kembali dari Guru ke Sekolah
+document.getElementById('btn_back_to_sekolah_dari_guru').addEventListener('click', () => {
     appState.sekolah = null;
-    inputCarianSekolah.value = ''; // Kosongkan carian bila patah balik
-    viewPilihPertandingan.classList.add('hidden');
-    viewPilihSekolah.classList.remove('hidden');
-});
-
-// Navigasi Kembali 2
-document.getElementById('btn_back_to_pertandingan').addEventListener('click', () => {
     appState.pertandingan = null;
+    inputCarianSekolah.value = ''; // Kosongkan carian bila patah balik
     viewDaftarGuru.classList.add('hidden');
-    viewPilihPertandingan.classList.remove('hidden');
+    viewPilihSekolah.classList.remove('hidden');
 });
 
 
@@ -175,7 +169,6 @@ const app = {
             document.getElementById('container_kad_guru').innerHTML = ''; // Kosongkan jika ralat
         }
 
-        viewPilihPertandingan.classList.add('hidden');
         viewDaftarGuru.classList.remove('hidden');
     },
 
