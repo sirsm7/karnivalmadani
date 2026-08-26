@@ -21,6 +21,7 @@ const appState = {
 
 // --- DOM ELEMENTS ---
 const viewPilihSekolah = document.getElementById('view_pilih_sekolah');
+// viewPilihPertandingan element has been removed from index.html
 const viewDaftarGuru = document.getElementById('view_daftar_guru');
 const viewDashboardGuru = document.getElementById('view_dashboard_guru');
 const viewDaftarPasukan = document.getElementById('view_daftar_pasukan');
@@ -155,7 +156,7 @@ const app = {
             selectKategori.appendChild(opt);
         });
 
-        document.getElementById('tajuk_borang_guru').textContent = `Daftar Guru: ${jenis} 2026`;
+        document.getElementById('tajuk_borang_guru').textContent = `Langkah 2: Maklumat Guru Pembimbing`;
         
         // Muat senarai guru sedia ada
         showLoading("Menyemak rekod guru berdaftar...");
