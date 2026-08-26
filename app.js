@@ -1,7 +1,7 @@
 // --- APP STATE ---
 const appState = {
     sekolah: null, // {id, kod, nama, jenis}
-    pertandingan: null, // 'Animasi AI' | 'Mikrobotik'
+    pertandingan: null, // 'Animasi AI'
     kategori: null,
     guru: null, // {id, nama, nokp, notel, emel, pertandingan, kategori_pertandingan}
     pasukanList: [], // Array dari pangkalan data
@@ -151,12 +151,6 @@ const app = {
                 categories = ['Sekolah Rendah (Perdana)', 'Sekolah Rendah (PPKI)'];
             } else {
                 categories = ['Sekolah Menengah (Perdana)', 'Sekolah Menengah (PPKI)'];
-            }
-        } else if (jenis === 'Mikrobotik') {
-            if (appState.sekolah.jenis === 'SK' || appState.sekolah.jenis === 'SJKC' || appState.sekolah.jenis === 'SJKT' || appState.sekolah.jenis === 'SR SABK') {
-                categories = ['Sekolah Rendah (Perdana)'];
-            } else {
-                categories = ['Sekolah Menengah (Perdana)'];
             }
         }
 
@@ -364,13 +358,8 @@ const app = {
         const ytLink = document.getElementById('link_youtube');
         const gemBtn = document.getElementById('btn_gem');
 
-        if (appState.pertandingan === 'Animasi AI') {
-            ytLink.href = YOUTUBE_ANIMASI;
-            gemBtn.classList.remove('hidden'); // Papar butang GEM
-        } else {
-            ytLink.href = YOUTUBE_MIKROBOTIK;
-            gemBtn.classList.add('hidden'); // Sembunyi butang GEM
-        }
+        ytLink.href = YOUTUBE_ANIMASI;
+        gemBtn.classList.remove('hidden');
 
         await app.loadPasukanList();
     },
@@ -603,31 +592,16 @@ const app = {
                 `;
             }
 
-            let actionUI = '';
-            if (appState.pertandingan === 'Animasi AI') {
-                const currentLink = pasukan.pautan_hasil || '';
-                actionUI = `
-                    <div class="mt-3 bg-gray-50 p-3 rounded border border-gray-200">
-                        <label class="block text-sm font-bold mb-1">Pautan YouTube Hasil Akhir:</label>
-                        <div class="flex gap-2">
-                            <input type="url" id="link_${pasukan.id}" class="w-full px-2 py-1 text-sm border rounded lowercase" value="${currentLink}" placeholder="https://youtube.com/...">
-                            <button onclick="app.simpanLinkAnimasi('${pasukan.id}')" class="bg-blue-600 hover:bg-blue-700 text-white text-sm px-3 py-1 rounded whitespace-nowrap">Simpan Link</button>
-                        </div>
+            const currentLink = pasukan.pautan_hasil || '';
+            const actionUI = `
+                <div class="mt-3 bg-gray-50 p-3 rounded border border-gray-200">
+                    <label class="block text-sm font-bold mb-1">Pautan YouTube Hasil Akhir:</label>
+                    <div class="flex gap-2">
+                        <input type="url" id="link_${pasukan.id}" class="w-full px-2 py-1 text-sm border rounded lowercase" value="${currentLink}" placeholder="https://youtube.com/...">
+                        <button onclick="app.simpanLinkAnimasi('${pasukan.id}')" class="bg-blue-600 hover:bg-blue-700 text-white text-sm px-3 py-1 rounded whitespace-nowrap">Simpan Link</button>
                     </div>
-                `;
-            } else if (appState.pertandingan === 'Mikrobotik') {
-                const hasFile = !!pasukan.pautan_hasil;
-                actionUI = `
-                    <div class="mt-3 bg-gray-50 p-3 rounded border border-gray-200">
-                        <label class="block text-sm font-bold mb-1">Muat Naik Fail Kod Robotik:</label>
-                        ${hasFile ? `<p class="text-xs text-green-600 mb-2 font-bold">Fail telah dimuat naik. Muat naik fail baru akan menggantikan fail lama.</p>` : ''}
-                        <div class="flex gap-2 items-center">
-                            <input type="file" id="file_${pasukan.id}" class="w-full text-sm">
-                            <button onclick="app.uploadFailMikrobotik('${pasukan.id}', '${pasukan.nama_pasukan}')" class="bg-blue-600 hover:bg-blue-700 text-white text-sm px-3 py-1 rounded whitespace-nowrap">Muat Naik</button>
-                        </div>
-                    </div>
-                `;
-            }
+                </div>
+            `;
 
             const hasSubmission = !!pasukan.pautan_hasil;
             const canPrint = isDisahkan && hasSubmission;
@@ -682,43 +656,6 @@ const app = {
         } else {
             Swal.fire('Ralat', 'Ralat menyimpan pautan: ' + res.error, 'error');
         }
-    },
-
-    uploadFailMikrobotik: async (pasukan_id, nama_pasukan) => {
-        const fileInput = document.getElementById(`file_${pasukan_id}`);
-        if (!fileInput.files || fileInput.files.length === 0) {
-            Swal.fire('Peringatan', 'Sila pilih fail untuk dimuat naik.', 'warning');
-            return;
-        }
-
-        const file = fileInput.files[0];
-        
-        const reader = new FileReader();
-        reader.onload = async (e) => {
-            const dataUrl = e.target.result;
-            
-            showLoading("Memuat naik fail ke Google Drive... Proses ini mungkin mengambil masa.");
-            
-            const gasRes = await window.db.muatNaikFailGAS(dataUrl, file.name, file.type, appState.sekolah.kod, nama_pasukan);
-            
-            if (gasRes.success) {
-                const dbRes = await window.db.updatePautanHasil(pasukan_id, gasRes.fileUrl);
-                hideLoading();
-
-                if (dbRes.success) {
-                    Swal.fire('Berjaya', 'Fail berjaya dimuat naik dan direkodkan!', 'success');
-                    app.loadPasukanList();
-                } else {
-                    Swal.fire('Ralat Sebahagian', 'Fail telah dimuat naik, tetapi ralat merekod pautan ke pangkalan data: ' + dbRes.error, 'warning');
-                }
-
-            } else {
-                hideLoading();
-                Swal.fire('Ralat', 'Ralat memuat naik fail: ' + gasRes.error, 'error');
-            }
-        };
-
-        reader.readAsDataURL(file);
     },
 
     janaSijilPDF: async (pasukan_id) => {
@@ -807,7 +744,7 @@ const app = {
                 doc.setFont("helvetica", "bold");
                 doc.setFontSize(14);
                 doc.setTextColor(185, 28, 28);
-                let tajukPert = appState.pertandingan === 'Animasi AI' ? "Pertandingan Video Animasi AI Kemerdekaan 2026" : "Pertandingan Robotik: Mikrobotik 2026";
+                const tajukPert = "Pertandingan Video Animasi AI Kemerdekaan 2026";
                 
                 // Pecahkan tajuk panjang kepada berbilang baris jika perlu
                 const splitTitle = doc.splitTextToSize(tajukPert.toUpperCase(), lebarA4 - 60);
@@ -825,18 +762,11 @@ const app = {
                 
                 // Menambah maklumat tarikh berdasarkan jenis pertandingan
                 nextY += 8; // Jarak sebelum tarikh, dipendekkan untuk landscape
-                let teksTarikh = "";
-                if (appState.pertandingan === 'Animasi AI') {
-                    teksTarikh = "25 Ogos 2026 hingga 15 September 2026";
-                } else if (appState.pertandingan === 'Mikrobotik') {
-                    teksTarikh = "26 Ogos 2026 hingga 16 September 2026";
-                }
+                const teksTarikh = "25 Ogos 2026 hingga 15 September 2026";
 
-                if (teksTarikh) {
-                    doc.setFont("helvetica", "bold");
-                    doc.setFontSize(11);
-                    doc.text(teksTarikh, lebarA4/2, nextY, { align: "center" });
-                }
+                doc.setFont("helvetica", "bold");
+                doc.setFontSize(11);
+                doc.text(teksTarikh, lebarA4/2, nextY, { align: "center" });
 
                 if (appState.imgSignBase64) {
                     try {
@@ -969,7 +899,7 @@ const app = {
             doc.setFont("helvetica", "bold");
             doc.setFontSize(14);
             doc.setTextColor(185, 28, 28);
-            let tajukPert = appState.pertandingan === 'Animasi AI' ? "Pertandingan Video Animasi AI Kemerdekaan 2026" : "Pertandingan Robotik: Mikrobotik 2026";
+            const tajukPert = "Pertandingan Video Animasi AI Kemerdekaan 2026";
             
             const splitTitle = doc.splitTextToSize(tajukPert.toUpperCase(), lebarA4 - 60);
             doc.text(splitTitle, lebarA4/2, 140, { align: "center" });
@@ -986,18 +916,11 @@ const app = {
             
             // TARIKH SPESIFIK BERDASARKAN PERTANDINGAN (KEHADIRAN SAHAJA)
             nextY += 8;
-            let teksTarikh = "";
-            if (appState.pertandingan === 'Animasi AI') {
-                teksTarikh = "25 September 2026";
-            } else if (appState.pertandingan === 'Mikrobotik') {
-                teksTarikh = "26 September 2026";
-            }
+            const teksTarikh = "25 September 2026";
 
-            if (teksTarikh) {
-                doc.setFont("helvetica", "bold");
-                doc.setFontSize(11);
-                doc.text(teksTarikh, lebarA4/2, nextY, { align: "center" });
-            }
+            doc.setFont("helvetica", "bold");
+            doc.setFontSize(11);
+            doc.text(teksTarikh, lebarA4/2, nextY, { align: "center" });
 
             // LUKIS TANDATANGAN
             if (appState.imgSignBase64) {

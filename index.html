@@ -59,14 +59,10 @@
             <section id="view_pilih_pertandingan" class="hidden">
                 <button id="btn_back_to_sekolah" class="text-blue-600 mb-4 hover:underline text-sm">&larr; Kembali tukar sekolah</button>
                 <h2 class="text-xl font-bold border-b pb-2 mb-4">Langkah 2: Pilih Pertandingan</h2>
-                <div class="grid md:grid-cols-2 gap-4">
+                <div class="grid grid-cols-1 gap-4">
                     <div class="border rounded-lg p-4 hover:shadow-lg cursor-pointer transition border-blue-200 bg-blue-50" onclick="app.pilihPertandingan('Animasi AI')">
                         <h3 class="font-bold text-lg text-blue-800">Pertandingan Video Animasi AI Kemerdekaan 2026</h3>
                         <p class="text-sm text-gray-600 mt-2">Pendaftaran untuk Kategori SR & SM (Perdana/PPKI)</p>
-                    </div>
-                    <div class="border rounded-lg p-4 hover:shadow-lg cursor-pointer transition border-green-200 bg-green-50" onclick="app.pilihPertandingan('Mikrobotik')">
-                        <h3 class="font-bold text-lg text-green-800">Pertandingan Robotik: Mikrobotik 2026</h3>
-                        <p class="text-sm text-gray-600 mt-2">Pendaftaran untuk Kategori SR & SM (Perdana)</p>
                     </div>
                 </div>
             </section>
@@ -287,13 +283,10 @@
         // Constants from system
         const SUPABASE_URL = "https://app.tech4ag.my";
         const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYW5vbiIsImlzcyI6InN1cGFiYXNlIiwiaWF0IjoxNzYzMzczNjQ1LCJleHAiOjIwNzg3MzM2NDV9.vZOedqJzUn01PjwfaQp7VvRzSm4aRMr21QblPDK8AoY";
-        const GAS_WEB_APP_URL = "https://script.google.com/macros/s/AKfycbz_64YzQje1N42KN-JhScZ9qX5wtHe5N1D5_oUQJPS0wQxQFauCK5cWctcbVOFiw_3HhQ/exec";
         
         // Pautan YouTube
         const YOUTUBE_ANIMASI = "https://youtube.com/live/9nYyPLaQ9Pc";
-        const YOUTUBE_MIKROBOTIK = "https://youtube.com/live/chyd82Gz6eo";
     </script>
-    <!-- Placeholder untuk script module. Akan dijana kemudian -->
     <script src="supabase.data.js"></script>
     <script src="app.js"></script>
 
