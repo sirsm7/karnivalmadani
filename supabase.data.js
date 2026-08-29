@@ -237,6 +237,36 @@ const db = {
             console.error("Ralat getStatistikPendaftaran:", error);
             return { success: false, error: error.message };
         }
+    },
+    
+    // 11. Dapatkan Senarai Sekolah Yang Telah Mendaftar
+    async getSenaraiSekolahDaftar(pertandingan) {
+        try {
+            const { data, error } = await supabaseClient.rpc('karnival_get_senarai_sekolah_daftar', {
+                p_pertandingan: pertandingan
+            });
+            
+            if (error) throw error;
+            return { success: true, data: data };
+        } catch (error) {
+            console.error("Ralat getSenaraiSekolahDaftar:", error);
+            return { success: false, error: error.message };
+        }
+    },
+    
+    // 12. Dapatkan Senarai Sekolah beserta Jumlah Pasukan
+    async getSenaraiPasukanIkutSekolah(pertandingan) {
+        try {
+            const { data, error } = await supabaseClient.rpc('karnival_get_senarai_pasukan_ikut_sekolah', {
+                p_pertandingan: pertandingan
+            });
+            
+            if (error) throw error;
+            return { success: true, data: data };
+        } catch (error) {
+            console.error("Ralat getSenaraiPasukanIkutSekolah:", error);
+            return { success: false, error: error.message };
+        }
     }
 };
 

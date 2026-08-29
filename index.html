@@ -43,18 +43,18 @@
             <!-- PAPARAN 1: Pilih Sekolah -->
             <section id="view_pilih_sekolah">
                 <!-- Statistik Pendaftaran -->
-                <div class="grid grid-cols-2 gap-4 mb-8">
-                    <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 text-center shadow-sm">
-                        <h3 class="text-sm font-bold text-blue-800 mb-1">JUMLAH SEKOLAH</h3>
-                        <div class="text-3xl font-black text-blue-600" id="stat_sekolah">-</div>
-                        <p class="text-xs text-gray-500 mt-1">Telah Mendaftar</p>
-                    </div>
-                    <div class="bg-green-50 border border-green-200 rounded-lg p-4 text-center shadow-sm">
-                        <h3 class="text-sm font-bold text-green-800 mb-1">JUMLAH PASUKAN</h3>
-                        <div class="text-3xl font-black text-green-600" id="stat_pasukan">-</div>
-                        <p class="text-xs text-gray-500 mt-1">Telah Didaftarkan</p>
-                    </div>
-                </div>
+				<div class="grid grid-cols-2 gap-4 mb-8">
+					<div onclick="app.paparSenaraiSekolahStat()" class="bg-blue-50 border border-blue-200 rounded-lg p-4 text-center shadow-sm cursor-pointer hover:bg-blue-100 hover:shadow-md transition">
+						<h3 class="text-sm font-bold text-blue-800 mb-1">JUMLAH SEKOLAH</h3>
+						<div class="text-3xl font-black text-blue-600" id="stat_sekolah">-</div>
+						<p class="text-xs text-gray-500 mt-1">Telah Mendaftar (Klik)</p>
+					</div>
+					<div onclick="app.paparSenaraiPasukanStat()" class="bg-green-50 border border-green-200 rounded-lg p-4 text-center shadow-sm cursor-pointer hover:bg-green-100 hover:shadow-md transition">
+						<h3 class="text-sm font-bold text-green-800 mb-1">JUMLAH PASUKAN</h3>
+						<div class="text-3xl font-black text-green-600" id="stat_pasukan">-</div>
+						<p class="text-xs text-gray-500 mt-1">Telah Didaftarkan (Klik)</p>
+					</div>
+				</div>
 
                 <h2 class="text-xl font-bold border-b pb-2 mb-4">Langkah 1: Pilih Sekolah</h2>
                 <div class="mb-4 relative">

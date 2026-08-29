@@ -109,9 +109,98 @@ document.getElementById('btn_back_to_sekolah_dari_guru').addEventListener('click
     viewPilihSekolah.classList.remove('hidden');
 });
 
-
 // --- APLIKASI CORE LOGIC ---
 const app = {
+
+    // --- FUNGSI POPUP STATISTIK ---
+    
+    paparSenaraiSekolahStat: async () => {
+        showLoading("Memuatkan senarai sekolah...");
+        const res = await window.db.getSenaraiSekolahDaftar('Animasi AI');
+        hideLoading();
+
+        if (res.success && res.data) {
+            if (res.data.length === 0) {
+                Swal.fire('Maklumat', 'Belum ada sekolah yang mendaftar.', 'info');
+                return;
+            }
+
+            let htmlContent = `<div class="max-h-64 overflow-y-auto text-left"><ul class="list-decimal list-inside space-y-2 text-sm text-gray-700">`;
+            res.data.forEach(item => {
+                htmlContent += `<li class="border-b pb-1"><strong>${item.nama_sekolah}</strong> <span class="text-xs text-gray-500 bg-gray-100 px-1 rounded ml-1">${item.kod_sekolah}</span></li>`;
+            });
+            htmlContent += `</ul></div>`;
+
+            Swal.fire({
+                title: 'Senarai Sekolah Telah Mendaftar',
+                html: htmlContent,
+                confirmButtonText: 'Tutup',
+                confirmButtonColor: '#3085d6',
+                width: '600px'
+            });
+        } else {
+            Swal.fire('Ralat', 'Gagal memuat turun data senarai sekolah.', 'error');
+        }
+    },
+
+    paparSenaraiPasukanStat: async () => {
+        showLoading("Memuatkan pecahan pasukan...");
+        const res = await window.db.getSenaraiPasukanIkutSekolah('Animasi AI');
+        hideLoading();
+
+        if (res.success && res.data) {
+             if (res.data.length === 0) {
+                Swal.fire('Maklumat', 'Belum ada pasukan yang didaftarkan.', 'info');
+                return;
+            }
+
+            let htmlContent = `
+            <div class="max-h-80 overflow-y-auto text-left">
+                <table class="w-full text-sm text-left border-collapse">
+                    <thead class="bg-gray-200 sticky top-0 shadow-sm">
+                        <tr>
+                            <th class="p-2 border-b text-gray-700">Sekolah</th>
+                            <th class="p-2 border-b text-center text-gray-700">Jum. Pasukan</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+            `;
+            let total = 0;
+            res.data.forEach(item => {
+                htmlContent += `
+                <tr class="hover:bg-gray-50">
+                    <td class="p-2 border-b">
+                        <div class="font-bold text-gray-800">${item.nama_sekolah}</div>
+                        <div class="text-xs text-gray-500">${item.kod_sekolah}</div>
+                    </td>
+                    <td class="p-2 border-b text-center align-middle font-bold text-blue-600 text-lg">${item.jumlah_pasukan}</td>
+                </tr>`;
+                total += parseInt(item.jumlah_pasukan);
+            });
+            htmlContent += `
+                    </tbody>
+                    <tfoot class="bg-gray-100 font-bold sticky bottom-0 border-t-2 border-gray-300">
+                        <tr>
+                            <td class="p-3 text-right text-gray-800">JUMLAH KESELURUHAN:</td>
+                            <td class="p-3 text-center text-green-600 text-xl">${total}</td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>`;
+
+            Swal.fire({
+                title: 'Pecahan Pasukan Mengikut Sekolah',
+                html: htmlContent,
+                confirmButtonText: 'Tutup',
+                confirmButtonColor: '#10b981',
+                width: '600px'
+            });
+        } else {
+            Swal.fire('Ralat', 'Gagal memuat turun data pecahan pasukan.', 'error');
+        }
+    },
+
+    // --- TAMAT FUNGSI POPUP STATISTIK ---
 
     renderSenaraiSekolah: (filterText = '') => {
         dropdownSekolah.innerHTML = '';
