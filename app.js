@@ -39,15 +39,30 @@ document.addEventListener("DOMContentLoaded", async () => {
 });
 
 async function initApp() {
-    showLoading("Memuatkan senarai sekolah...");
-    const res = await window.db.getSenaraiSekolah();
+    showLoading("Memuatkan data...");
+    
+    // Muatkan statistik dan senarai sekolah serentak (Parallel)
+    const [sekolahRes, statistikRes] = await Promise.all([
+        window.db.getSenaraiSekolah(),
+        window.db.getStatistikPendaftaran('Animasi AI')
+    ]);
+    
     hideLoading();
 
-    if (res.success) {
-        appState.sekolahRawList = res.data;
+    // Proses data sekolah
+    if (sekolahRes.success) {
+        appState.sekolahRawList = sekolahRes.data;
         app.renderSenaraiSekolah();
     } else {
         Swal.fire('Ralat', 'Gagal memuat turun maklumat sekolah. Sila muat semula halaman.', 'error');
+    }
+    
+    // Kemas kini UI Statistik (Jika elemen stat ada)
+    if (statistikRes.success && statistikRes.data) {
+        const elSekolah = document.getElementById('stat_sekolah');
+        const elPasukan = document.getElementById('stat_pasukan');
+        if (elSekolah) elSekolah.textContent = statistikRes.data.jumlah_sekolah || 0;
+        if (elPasukan) elPasukan.textContent = statistikRes.data.jumlah_pasukan || 0;
     }
 }
 

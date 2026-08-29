@@ -221,6 +221,22 @@ const db = {
             console.error("Ralat kemaskiniPasukan:", error);
             return { success: false, error: error.message };
         }
+    },
+
+    // 10. Dapatkan Statistik Pendaftaran (Jumlah Sekolah & Jumlah Pasukan)
+    async getStatistikPendaftaran(pertandingan) {
+        try {
+            const { data, error } = await supabaseClient.rpc('karnival_get_statistik_pendaftaran', {
+                p_pertandingan: pertandingan
+            });
+            
+            if (error) throw error;
+            // RPC mengembalikan array dengan satu objek, jadi kita ambil index 0
+            return { success: true, data: data[0] };
+        } catch (error) {
+            console.error("Ralat getStatistikPendaftaran:", error);
+            return { success: false, error: error.message };
+        }
     }
 };
 
