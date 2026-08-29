@@ -125,14 +125,47 @@ const app = {
                 return;
             }
 
-            let htmlContent = `<div class="max-h-64 overflow-y-auto text-left"><ul class="list-decimal list-inside space-y-2 text-sm text-gray-700">`;
-            res.data.forEach(item => {
-                htmlContent += `<li class="border-b pb-1"><strong>${item.nama_sekolah}</strong> <span class="text-xs text-gray-500 bg-gray-100 px-1 rounded ml-1">${item.kod_sekolah}</span></li>`;
-            });
-            htmlContent += `</ul></div>`;
+            // Grouping data by kategori_pertandingan
+            const groupedData = res.data.reduce((acc, curr) => {
+                const kategori = curr.kategori_pertandingan || 'Tiada Kategori';
+                if (!acc[kategori]) {
+                    acc[kategori] = [];
+                }
+                acc[kategori].push(curr);
+                return acc;
+            }, {});
+
+            let htmlContent = `<div class="max-h-80 overflow-y-auto text-left pr-2 space-y-4">`;
+            
+            for (const [kategori, senarai] of Object.entries(groupedData)) {
+                htmlContent += `
+                    <div class="bg-gray-50 border rounded-lg overflow-hidden">
+                        <div class="bg-blue-100 px-4 py-2 border-b font-bold text-blue-800 text-sm flex justify-between items-center">
+                            <span>${kategori}</span>
+                            <span class="bg-blue-600 text-white text-xs px-2 py-0.5 rounded-full">${senarai.length}</span>
+                        </div>
+                        <div class="p-3">
+                            <ul class="list-decimal list-inside space-y-2 text-sm text-gray-700">
+                `;
+                
+                senarai.forEach(item => {
+                    htmlContent += `<li class="border-b pb-1 last:border-0 last:pb-0 border-gray-200">
+                        <strong>${item.nama_sekolah}</strong> 
+                        <span class="text-xs text-gray-500 bg-gray-200 px-1 rounded ml-1">${item.kod_sekolah}</span>
+                    </li>`;
+                });
+                
+                htmlContent += `
+                            </ul>
+                        </div>
+                    </div>
+                `;
+            }
+            
+            htmlContent += `</div>`;
 
             Swal.fire({
-                title: 'Senarai Sekolah Telah Mendaftar',
+                title: 'Sekolah Mendaftar (Kategori)',
                 html: htmlContent,
                 confirmButtonText: 'Tutup',
                 confirmButtonColor: '#3085d6',
