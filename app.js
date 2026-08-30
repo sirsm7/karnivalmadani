@@ -21,7 +21,6 @@ const appState = {
 
 // --- DOM ELEMENTS ---
 const viewPilihSekolah = document.getElementById('view_pilih_sekolah');
-// viewPilihPertandingan element has been removed from index.html
 const viewDaftarGuru = document.getElementById('view_daftar_guru');
 const viewDashboardGuru = document.getElementById('view_dashboard_guru');
 const viewDaftarPasukan = document.getElementById('view_daftar_pasukan');
@@ -182,47 +181,75 @@ const app = {
         hideLoading();
 
         if (res.success && res.data) {
-             if (res.data.length === 0) {
+            if (res.data.length === 0) {
                 Swal.fire('Maklumat', 'Belum ada pasukan yang didaftarkan.', 'info');
                 return;
             }
 
-            let htmlContent = `
-            <div class="max-h-80 overflow-y-auto text-left">
-                <table class="w-full text-sm text-left border-collapse">
-                    <thead class="bg-gray-200 sticky top-0 shadow-sm">
-                        <tr>
-                            <th class="p-2 border-b text-gray-700">Sekolah</th>
-                            <th class="p-2 border-b text-center text-gray-700">Jum. Pasukan</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-            `;
-            let total = 0;
-            res.data.forEach(item => {
+            // Grouping data by kategori_pertandingan
+            const groupedData = res.data.reduce((acc, curr) => {
+                const kategori = curr.kategori_pertandingan || 'Tiada Kategori';
+                if (!acc[kategori]) {
+                    acc[kategori] = [];
+                }
+                acc[kategori].push(curr);
+                return acc;
+            }, {});
+
+            let htmlContent = `<div class="max-h-80 overflow-y-auto text-left pr-2 space-y-4">`;
+            let grandTotal = 0;
+
+            for (const [kategori, senarai] of Object.entries(groupedData)) {
+                const subtotal = senarai.reduce((sum, item) => sum + (parseInt(item.jumlah_pasukan) || 0), 0);
+                grandTotal += subtotal;
+
                 htmlContent += `
-                <tr class="hover:bg-gray-50">
-                    <td class="p-2 border-b">
-                        <div class="font-bold text-gray-800">${item.nama_sekolah}</div>
-                        <div class="text-xs text-gray-500">${item.kod_sekolah}</div>
-                    </td>
-                    <td class="p-2 border-b text-center align-middle font-bold text-blue-600 text-lg">${item.jumlah_pasukan}</td>
-                </tr>`;
-                total += parseInt(item.jumlah_pasukan);
-            });
-            htmlContent += `
-                    </tbody>
-                    <tfoot class="bg-gray-100 font-bold sticky bottom-0 border-t-2 border-gray-300">
-                        <tr>
-                            <td class="p-3 text-right text-gray-800">JUMLAH KESELURUHAN:</td>
-                            <td class="p-3 text-center text-green-600 text-xl">${total}</td>
+                    <div class="bg-gray-50 border rounded-lg overflow-hidden shadow-sm">
+                        <div class="bg-green-100 px-4 py-2 border-b font-bold text-green-800 text-sm flex justify-between items-center">
+                            <span>${kategori}</span>
+                            <span class="bg-green-600 text-white text-xs px-2.5 py-0.5 rounded-full font-bold">${subtotal} Pasukan</span>
+                        </div>
+                        <div class="p-3">
+                            <table class="w-full text-sm text-left border-collapse">
+                                <thead>
+                                    <tr class="border-b text-gray-500 text-xs">
+                                        <th class="pb-1 font-semibold">Sekolah</th>
+                                        <th class="pb-1 text-center font-semibold">Jumlah Pasukan</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                `;
+
+                senarai.forEach(item => {
+                    const count = parseInt(item.jumlah_pasukan) || 0;
+                    htmlContent += `
+                        <tr class="border-b last:border-0 hover:bg-gray-100">
+                            <td class="py-1.5">
+                                <div class="font-bold text-gray-800 text-xs md:text-sm">${item.nama_sekolah}</div>
+                                <div class="text-[10px] text-gray-500">${item.kod_sekolah}</div>
+                            </td>
+                            <td class="py-1.5 text-center font-bold text-blue-600 text-base align-middle">${count}</td>
                         </tr>
-                    </tfoot>
-                </table>
+                    `;
+                });
+
+                htmlContent += `
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                `;
+            }
+
+            htmlContent += `
+                <div class="bg-gray-100 p-3 rounded-lg border-2 border-gray-300 font-bold flex justify-between items-center text-sm sticky bottom-0 shadow-sm">
+                    <span class="text-gray-800">JUMLAH KESELURUHAN PASUKAN:</span>
+                    <span class="text-green-600 text-xl font-black">${grandTotal}</span>
+                </div>
             </div>`;
 
             Swal.fire({
-                title: 'Pecahan Pasukan Mengikut Sekolah',
+                title: 'Pecahan Pasukan Mengikut Kategori',
                 html: htmlContent,
                 confirmButtonText: 'Tutup',
                 confirmButtonColor: '#10b981',
@@ -254,7 +281,6 @@ const app = {
             li.className = "px-4 py-2 hover:bg-blue-100 cursor-pointer border-b last:border-b-0 text-sm";
             li.textContent = `[${s.kod}] ${s.nama}`;
             
-            // Simpan data sebagai string dalam attribute untuk diekstrak bila di klik
             li.setAttribute('data-sekolah', JSON.stringify(s));
             
             li.addEventListener('click', function() {
@@ -295,7 +321,6 @@ const app = {
 
         document.getElementById('tajuk_borang_guru').textContent = `Langkah 2: Maklumat Guru Pembimbing`;
         
-        // Muat senarai guru sedia ada
         showLoading("Menyemak rekod guru berdaftar...");
         const res = await window.db.getSenaraiGuruBagiSekolahPertandingan(appState.sekolah.id, jenis);
         hideLoading();
@@ -304,7 +329,7 @@ const app = {
             app.renderSenaraiGuru(res.data);
         } else {
             console.error("Gagal muat senarai guru", res.error);
-            document.getElementById('container_kad_guru').innerHTML = ''; // Kosongkan jika ralat
+            document.getElementById('container_kad_guru').innerHTML = '';
         }
 
         viewDaftarGuru.classList.remove('hidden');
@@ -315,7 +340,6 @@ const app = {
         container.innerHTML = '';
 
         if (!senaraiGuru || senaraiGuru.length === 0) {
-            // Jika tiada guru berdaftar
             const el = document.createElement('div');
             el.className = "bg-blue-50 border border-blue-200 text-blue-800 p-4 rounded-lg text-sm text-center italic mb-4";
             el.textContent = "Tiada guru pembimbing mendaftar dari sekolah ini untuk pertandingan yang dipilih. Sila isi borang pendaftaran baru di bawah.";
@@ -323,7 +347,6 @@ const app = {
             return;
         }
         
-        // Ada guru
         const titleEl = document.createElement('h3');
         titleEl.className = "font-bold text-indigo-800 mb-2";
         titleEl.textContent = "Guru Yang Telah Mendaftar (Klik Untuk Log Masuk)";
@@ -462,7 +485,6 @@ const app = {
             
             viewDashboardGuru.classList.add('hidden');
             
-            // Muat semula senarai guru untuk paparan yang dikemaskini
             showLoading("Memuat semula senarai...");
             const res = await window.db.getSenaraiGuruBagiSekolahPertandingan(appState.sekolah.id, appState.pertandingan);
             hideLoading();
@@ -515,7 +537,6 @@ const app = {
                 btnTambah.innerHTML = `+ Daftar Pasukan Baru (<span id="count_pasukan">${appState.pasukanList.length}</span>/10)`;
             }
 
-            // Tunjukkan butang sijil kehadiran jika tiada pasukan
             const containerSijilKehadiran = document.getElementById('container_sijil_kehadiran');
             if (appState.pasukanList.length === 0) {
                 containerSijilKehadiran.classList.remove('hidden');
@@ -712,7 +733,6 @@ const app = {
                 ? `<span class="bg-green-100 text-green-800 text-xs font-semibold px-2 py-1 rounded">Disahkan Oleh Admin</span>` 
                 : `<span class="bg-yellow-100 text-yellow-800 text-xs font-semibold px-2 py-1 rounded">Menunggu Semakan</span>`;
 
-            // Butang Edit/Padam hanya muncul jika belum disahkan
             let editDeleteUI = '';
             if (!isDisahkan) {
                 editDeleteUI = `
@@ -798,24 +818,20 @@ const app = {
         try {
             const { jsPDF } = window.jspdf;
             
-            // Menggunakan orientasi Landscape dan format A4
             const doc = new jsPDF({
                 orientation: 'landscape',
                 format: 'a4'
             });
 
-            // Tambah Font Cursive jika berjaya dimuat turun
             if (appState.fontGreatVibesBase64) {
                 doc.addFileToVFS("GreatVibes-Regular.ttf", appState.fontGreatVibesBase64);
                 doc.addFont("GreatVibes-Regular.ttf", "GreatVibes", "normal");
             }
 
-            // Dimensi A4 Landscape (Lebar: 297mm, Tinggi: 210mm)
             const lebarA4 = 297;
             const tinggiA4 = 210;
 
             const generateHalamanSijil = (nama, role) => {
-                // Set background image first so it's behind everything else
                 if (appState.imgBorderBase64) {
                     try {
                         doc.addImage(appState.imgBorderBase64, 'PNG', 0, 0, lebarA4, tinggiA4);
@@ -824,29 +840,24 @@ const app = {
                     }
                 }
 
-                // Kedudukan Y diselaraskan untuk A4 Landscape
                 if (appState.imgLogoBase64) {
                     try {
-                        // Skala logo diselaraskan, diletakkan lebih ke atas sedikit
                         doc.addImage(appState.imgLogoBase64, 'PNG', lebarA4/2 - 20, 25, 40, 26);
                     } catch (e) {
                         console.warn("Gagal melukis logo di PDF", e);
                     }
                 }
 
-                // Cek jika font ada, guna GreatVibes, jika tidak, guna helvetica
                 if (appState.fontGreatVibesBase64) {
                     doc.setFont("GreatVibes", "normal");
-                    doc.setFontSize(52); // Besarkan saiz untuk cursive
-                    // Gunakan warna merah seperti contoh
-                    doc.setTextColor(220, 38, 38); // Tailwind red-600
+                    doc.setFontSize(52);
+                    doc.setTextColor(220, 38, 38);
                 } else {
                     doc.setFont("helvetica", "bold");
                     doc.setFontSize(28);
                     doc.setTextColor(30, 64, 175);
                 }
                 
-                // Gunakan huruf Title Case untuk font cursive supaya lebih cantik
                 const titleText = appState.fontGreatVibesBase64 ? "Sijil Penyertaan" : "SIJIL PENYERTAAN";
                 doc.text(titleText, lebarA4/2, 65, { align: "center" });
 
@@ -877,11 +888,9 @@ const app = {
                 doc.setTextColor(185, 28, 28);
                 const tajukPert = "Pertandingan Video Animasi AI Kemerdekaan 2026";
                 
-                // Pecahkan tajuk panjang kepada berbilang baris jika perlu
                 const splitTitle = doc.splitTextToSize(tajukPert.toUpperCase(), lebarA4 - 60);
                 doc.text(splitTitle, lebarA4/2, 140, { align: "center" });
 
-                // Kira kedudukan Y seterusnya berdasarkan bilangan baris tajuk
                 let nextY = 140 + (splitTitle.length * 6);
 
                 doc.setFont("helvetica", "normal");
@@ -891,8 +900,7 @@ const app = {
                 const splitDesc = doc.splitTextToSize(desc, lebarA4 - 60);
                 doc.text(splitDesc, lebarA4/2, nextY, { align: "center" });
                 
-                // Menambah maklumat tarikh berdasarkan jenis pertandingan
-                nextY += 8; // Jarak sebelum tarikh, dipendekkan untuk landscape
+                nextY += 8;
                 const teksTarikh = "25 Ogos 2026 hingga 15 September 2026";
 
                 doc.setFont("helvetica", "bold");
@@ -901,14 +909,11 @@ const app = {
 
                 if (appState.imgSignBase64) {
                     try {
-                        // Skala tandatangan diselaraskan, diletakkan lebih bawah
                         doc.addImage(appState.imgSignBase64, 'PNG', lebarA4/2 - 40, 165, 80, 32);
                     } catch (e) {
                          console.warn("Gagal melukis tandatangan di PDF", e);
                     }
                 }
-                
-                // Teks nama dan jawatan pengarah di bawah tandatangan telah dibuang
             };
 
             generateHalamanSijil(appState.guru.nama, "GURU PEMBIMBING");
@@ -932,11 +937,10 @@ const app = {
                 showCancelButton: true,
                 confirmButtonText: 'Muat Turun PDF',
                 cancelButtonText: 'Batal',
-                confirmButtonColor: '#10b981', // Tailwind green-500
-                cancelButtonColor: '#6b7280'   // Tailwind gray-500
+                confirmButtonColor: '#10b981',
+                cancelButtonColor: '#6b7280'
             });
 
-            // Jika pengguna klik "Muat Turun PDF"
             if (result.isConfirmed) {
                 doc.save(`Sijil_Penyertaan_${pasukan.nama_pasukan.replace(/\s+/g, '_')}.pdf`);
             }
@@ -969,7 +973,6 @@ const app = {
             const lebarA4 = 297;
             const tinggiA4 = 210;
 
-            // LUKIS LATAR BELAKANG
             if (appState.imgBorderBase64) {
                 try {
                     doc.addImage(appState.imgBorderBase64, 'PNG', 0, 0, lebarA4, tinggiA4);
@@ -978,7 +981,6 @@ const app = {
                 }
             }
 
-            // LUKIS LOGO
             if (appState.imgLogoBase64) {
                 try {
                     doc.addImage(appState.imgLogoBase64, 'PNG', lebarA4/2 - 20, 25, 40, 26);
@@ -987,7 +989,6 @@ const app = {
                 }
             }
 
-            // TAJUK SIJIL (Sijil Kehadiran)
             if (appState.fontGreatVibesBase64) {
                 doc.setFont("GreatVibes", "normal");
                 doc.setFontSize(52);
@@ -1001,19 +1002,16 @@ const app = {
             const titleText = appState.fontGreatVibesBase64 ? "Sijil Kehadiran" : "SIJIL KEHADIRAN";
             doc.text(titleText, lebarA4/2, 65, { align: "center" });
 
-            // TEKS PENGESAHAN
             doc.setFont("helvetica", "normal");
             doc.setFontSize(12);
             doc.setTextColor(50, 50, 50);
             doc.text("Dengan ini disahkan bahawa", lebarA4/2, 80, { align: "center" });
 
-            // NAMA GURU
             doc.setFont("helvetica", "bold");
             doc.setFontSize(16);
             doc.setTextColor(0, 0, 0);
             doc.text(appState.guru.nama.toUpperCase(), lebarA4/2, 90, { align: "center" });
 
-            // PERANAN DAN SEKOLAH
             doc.setFont("helvetica", "normal");
             doc.setFontSize(12);
             doc.text(`Telah hadir dan mendaftar sebagai GURU PEMBIMBING mewakili`, lebarA4/2, 105, { align: "center" });
@@ -1026,7 +1024,6 @@ const app = {
             doc.setFontSize(12);
             doc.text(`untuk sesi taklimat`, lebarA4/2, 130, { align: "center" });
 
-            // TAJUK PERTANDINGAN
             doc.setFont("helvetica", "bold");
             doc.setFontSize(14);
             doc.setTextColor(185, 28, 28);
@@ -1037,7 +1034,6 @@ const app = {
 
             let nextY = 140 + (splitTitle.length * 6);
 
-            // PENERANGAN
             doc.setFont("helvetica", "normal");
             doc.setFontSize(11);
             doc.setTextColor(50, 50, 50);
@@ -1045,7 +1041,6 @@ const app = {
             const splitDesc = doc.splitTextToSize(desc, lebarA4 - 60);
             doc.text(splitDesc, lebarA4/2, nextY, { align: "center" });
             
-            // TARIKH SPESIFIK BERDASARKAN PERTANDINGAN (KEHADIRAN SAHAJA)
             nextY += 8;
             const teksTarikh = "25 September 2026";
 
@@ -1053,7 +1048,6 @@ const app = {
             doc.setFontSize(11);
             doc.text(teksTarikh, lebarA4/2, nextY, { align: "center" });
 
-            // LUKIS TANDATANGAN
             if (appState.imgSignBase64) {
                 try {
                     doc.addImage(appState.imgSignBase64, 'PNG', lebarA4/2 - 40, 165, 80, 32);
@@ -1098,13 +1092,11 @@ function hideLoading() {
 
 async function preloadFontForPDF() {
     try {
-        // Muat turun font Great Vibes (.ttf) dari Google Fonts melalui CDN
         const fontUrl = 'https://cdn.jsdelivr.net/fontsource/fonts/great-vibes@latest/latin-400-normal.ttf';
         const response = await fetch(fontUrl);
         if (!response.ok) throw new Error("Gagal memuat turun font");
         const buffer = await response.arrayBuffer();
         
-        // Tukar ArrayBuffer kepada Base64
         let binary = '';
         const bytes = new Uint8Array(buffer);
         const len = bytes.byteLength;
@@ -1121,9 +1113,6 @@ function preloadImagesForPDF() {
     const getBase64ImageFromUrlViaCanvas = (imageUrl) => {
         return new Promise((resolve) => {
             let img = new Image();
-            // CORS tidak diperlukan lagi jika imej berada di pelayan yang sama (relative path)
-            // img.crossOrigin = 'Anonymous'; 
-            
             img.onload = () => {
                 let canvas = document.createElement('canvas');
                 let ctx = canvas.getContext('2d');
@@ -1142,14 +1131,13 @@ function preloadImagesForPDF() {
                 console.warn("Gagal memuatkan imej untuk PDF:", imageUrl);
                 resolve(null);
             };
-            // Terus gunakan URL relatif, tanpa proksi allorigins
             img.src = imageUrl; 
         });
     }
     
     getBase64ImageFromUrlViaCanvas(appState.logoUrl).then(data => { if(data) appState.imgLogoBase64 = data; });
     getBase64ImageFromUrlViaCanvas(appState.signUrl).then(data => { if(data) appState.imgSignBase64 = data; });
-    getBase64ImageFromUrlViaCanvas(appState.borderUrl).then(data => { if(data) appState.imgBorderBase64 = data; }); // Added preload for border
+    getBase64ImageFromUrlViaCanvas(appState.borderUrl).then(data => { if(data) appState.imgBorderBase64 = data; });
 }
 
 window.app = app;
