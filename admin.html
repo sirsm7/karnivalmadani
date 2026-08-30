@@ -54,85 +54,120 @@
 
             <!-- VIEW: DASHBOARD -->
             <section id="view_dashboard" class="hidden">
-                <div class="flex justify-between items-center border-b pb-2 mb-6">
-                    <h2 class="text-xl font-bold text-gray-800">Dashboard Semakan Penyertaan</h2>
-                    <div>
-                        <button onclick="adminApp.loadSenarai()" class="text-blue-600 text-sm hover:underline mr-4">🔄 Muat Semula Data</button>
-                        <button onclick="adminApp.logout()" class="text-red-500 text-sm hover:underline">Keluar</button>
-                    </div>
-                </div>
-
-                <!-- KAD RINGKASAN GURU -->
-                <h3 class="font-bold text-lg mb-4 text-gray-800 border-b pb-1">Statistik Pendaftaran Guru Pembimbing</h3>
-                <div class="grid grid-cols-2 md:grid-cols-2 gap-4 mb-8">
+                <div class="flex flex-col md:flex-row justify-between items-start md:items-center border-b pb-4 mb-6 gap-4">
+                    <h2 class="text-xl font-bold text-gray-800">Dashboard Pengurusan</h2>
                     
-                    <!-- Animasi AI - Ada Pasukan -->
-                    <div onclick="adminApp.bukaModalGuru('Animasi AI', true)" class="bg-indigo-50 border border-indigo-200 rounded-lg p-4 cursor-pointer hover:shadow-md hover:bg-indigo-100 transition text-center">
-                        <div class="text-sm font-bold text-indigo-800 mb-1">Animasi AI</div>
-                        <div class="text-xs text-gray-600 mb-2">Telah Berpasukan</div>
-                        <div class="text-3xl font-black text-indigo-600" id="count_animasi_ada">0</div>
-                    </div>
-
-                    <!-- Animasi AI - Tiada Pasukan -->
-                    <div onclick="adminApp.bukaModalGuru('Animasi AI', false)" class="bg-red-50 border border-red-200 rounded-lg p-4 cursor-pointer hover:shadow-md hover:bg-red-100 transition text-center relative overflow-hidden">
-                        <div class="text-sm font-bold text-red-800 mb-1">Animasi AI</div>
-                        <div class="text-xs text-gray-600 mb-2">Belum Mendaftar Pasukan</div>
-                        <div class="text-3xl font-black text-red-600" id="count_animasi_tiada">0</div>
-                        <div class="absolute top-0 right-0 bg-red-500 text-white text-[10px] px-2 py-0.5 rounded-bl-lg font-bold">⚠️</div>
-                    </div>
-
-                </div>
-
-                <div class="border-t-2 border-gray-300 my-6"></div>
-                <h3 class="font-bold text-lg mb-4 text-gray-800">Senarai Pasukan Berdaftar</h3>
-
-                <!-- Filters -->
-                <div class="bg-gray-50 p-4 rounded-lg mb-6 border flex flex-col md:flex-row gap-4">
-                    <div class="w-full md:w-1/3">
-                        <label class="block text-sm font-bold mb-1">Tapis Pertandingan:</label>
-                        <select id="filter_pertandingan" class="w-full px-2 py-1 border rounded" onchange="adminApp.renderTable()">
-                            <option value="Semua">Semua Pertandingan</option>
-                            <option value="Animasi AI">Pertandingan Video Animasi AI Kemerdekaan 2026</option>
-                        </select>
-                    </div>
-                    <div class="w-full md:w-1/3">
-                        <label class="block text-sm font-bold mb-1">Tapis Kategori:</label>
-                        <select id="filter_kategori" class="w-full px-2 py-1 border rounded" onchange="adminApp.renderTable()">
-                            <option value="Semua">Semua Kategori</option>
-                            <option value="Sekolah Rendah (Perdana)">Sekolah Rendah (Perdana)</option>
-                            <option value="Sekolah Rendah (PPKI)">Sekolah Rendah (PPKI)</option>
-                            <option value="Sekolah Menengah (Perdana)">Sekolah Menengah (Perdana)</option>
-                            <option value="Sekolah Menengah (PPKI)">Sekolah Menengah (PPKI)</option>
-                        </select>
-                    </div>
-                    <div class="w-full md:w-1/3">
-                        <label class="block text-sm font-bold mb-1">Tapis Status:</label>
-                        <select id="filter_status" class="w-full px-2 py-1 border rounded" onchange="adminApp.renderTable()">
-                            <option value="Semua">Semua Status</option>
-                            <option value="Menunggu">Menunggu Semakan / Belum Hantar</option>
-                            <option value="Disahkan">Telah Disahkan</option>
-                        </select>
+                    <div class="flex flex-wrap items-center gap-2">
+                        <!-- Navigation Toggle -->
+                        <div class="bg-gray-200 p-1 rounded-lg flex space-x-1 mr-4">
+                            <button id="tab_senarai" onclick="adminApp.togolPaparan('senarai')" class="bg-white text-gray-800 shadow px-4 py-1.5 rounded-md text-sm font-bold transition">Senarai Penuh</button>
+                            <button id="tab_ranking" onclick="adminApp.togolPaparan('ranking')" class="text-gray-600 hover:bg-gray-300 px-4 py-1.5 rounded-md text-sm font-bold transition">🏆 Paparan Ranking</button>
+                        </div>
+                        
+                        <button onclick="adminApp.loadSenarai()" class="text-blue-600 text-sm hover:underline font-bold bg-blue-50 px-3 py-1.5 rounded border border-blue-200">🔄 Segarkan</button>
+                        <button onclick="adminApp.logout()" class="text-red-500 text-sm hover:underline font-bold bg-red-50 px-3 py-1.5 rounded border border-red-200">Keluar</button>
                     </div>
                 </div>
 
-                <!-- Senarai Penuh -->
-                <div class="overflow-x-auto">
-                    <table class="min-w-full bg-white border">
-                        <thead>
-                            <tr class="bg-gray-800 text-white text-sm leading-normal">
-                                <th class="py-3 px-3 text-left">Sekolah & Guru</th>
-                                <th class="py-3 px-3 text-left">Pasukan & Murid</th>
-                                <th class="py-3 px-3 text-left">Kategori & Pertandingan</th>
-                                <th class="py-3 px-3 text-left">Pautan / Fail</th>
-                                <th class="py-3 px-3 text-center">Status Sijil</th>
-                                <th class="py-3 px-3 text-center">Tindakan</th>
-                            </tr>
-                        </thead>
-                        <tbody id="table_body" class="text-gray-600 text-sm font-light">
-                            <!-- Rows akan dimasukkan melalui JS -->
-                        </tbody>
-                    </table>
+                <!-- SUB-VIEW: SENARAI PENYERTAAN -->
+                <div id="paparan_senarai">
+                    <!-- KAD RINGKASAN GURU -->
+                    <h3 class="font-bold text-lg mb-4 text-gray-800 border-b pb-1">Statistik Pendaftaran Guru Pembimbing</h3>
+                    <div class="grid grid-cols-2 md:grid-cols-2 gap-4 mb-8">
+                        
+                        <!-- Animasi AI - Ada Pasukan -->
+                        <div onclick="adminApp.bukaModalGuru('Animasi AI', true)" class="bg-indigo-50 border border-indigo-200 rounded-lg p-4 cursor-pointer hover:shadow-md hover:bg-indigo-100 transition text-center">
+                            <div class="text-sm font-bold text-indigo-800 mb-1">Animasi AI</div>
+                            <div class="text-xs text-gray-600 mb-2">Telah Berpasukan</div>
+                            <div class="text-3xl font-black text-indigo-600" id="count_animasi_ada">0</div>
+                        </div>
+
+                        <!-- Animasi AI - Tiada Pasukan -->
+                        <div onclick="adminApp.bukaModalGuru('Animasi AI', false)" class="bg-red-50 border border-red-200 rounded-lg p-4 cursor-pointer hover:shadow-md hover:bg-red-100 transition text-center relative overflow-hidden">
+                            <div class="text-sm font-bold text-red-800 mb-1">Animasi AI</div>
+                            <div class="text-xs text-gray-600 mb-2">Belum Mendaftar Pasukan</div>
+                            <div class="text-3xl font-black text-red-600" id="count_animasi_tiada">0</div>
+                            <div class="absolute top-0 right-0 bg-red-500 text-white text-[10px] px-2 py-0.5 rounded-bl-lg font-bold">⚠️</div>
+                        </div>
+
+                    </div>
+
+                    <div class="border-t-2 border-gray-300 my-6"></div>
+                    <h3 class="font-bold text-lg mb-4 text-gray-800">Senarai Pasukan Berdaftar</h3>
+
+                    <!-- Filters -->
+                    <div class="bg-gray-50 p-4 rounded-lg mb-6 border flex flex-col md:flex-row gap-4">
+                        <div class="w-full md:w-1/3">
+                            <label class="block text-sm font-bold mb-1">Tapis Pertandingan:</label>
+                            <select id="filter_pertandingan" class="w-full px-2 py-1 border rounded focus:ring focus:ring-blue-200" onchange="adminApp.renderTable()">
+                                <option value="Semua">Semua Pertandingan</option>
+                                <option value="Animasi AI">Pertandingan Video Animasi AI Kemerdekaan 2026</option>
+                            </select>
+                        </div>
+                        <div class="w-full md:w-1/3">
+                            <label class="block text-sm font-bold mb-1">Tapis Kategori:</label>
+                            <select id="filter_kategori" class="w-full px-2 py-1 border rounded focus:ring focus:ring-blue-200" onchange="adminApp.renderTable()">
+                                <option value="Semua">Semua Kategori</option>
+                                <option value="Sekolah Rendah (Perdana)">Sekolah Rendah (Perdana)</option>
+                                <option value="Sekolah Rendah (PPKI)">Sekolah Rendah (PPKI)</option>
+                                <option value="Sekolah Menengah (Perdana)">Sekolah Menengah (Perdana)</option>
+                                <option value="Sekolah Menengah (PPKI)">Sekolah Menengah (PPKI)</option>
+                            </select>
+                        </div>
+                        <div class="w-full md:w-1/3">
+                            <label class="block text-sm font-bold mb-1">Tapis Status:</label>
+                            <select id="filter_status" class="w-full px-2 py-1 border rounded focus:ring focus:ring-blue-200" onchange="adminApp.renderTable()">
+                                <option value="Semua">Semua Status</option>
+                                <option value="Menunggu">Menunggu Semakan / Belum Hantar</option>
+                                <option value="Disahkan">Telah Disahkan</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Senarai Penuh -->
+                    <div class="overflow-x-auto rounded-lg border">
+                        <table class="min-w-full bg-white">
+                            <thead>
+                                <tr class="bg-gray-800 text-white text-sm leading-normal">
+                                    <th class="py-3 px-3 text-left w-1/4">Sekolah & Guru</th>
+                                    <th class="py-3 px-3 text-left w-1/4">Pasukan & Murid</th>
+                                    <th class="py-3 px-3 text-left">Kategori & Pertandingan</th>
+                                    <th class="py-3 px-3 text-center">Video Hasil</th>
+                                    <th class="py-3 px-3 text-center">Status Sijil</th>
+                                    <th class="py-3 px-3 text-center">Tindakan</th>
+                                </tr>
+                            </thead>
+                            <tbody id="table_body" class="text-gray-600 text-sm font-light">
+                                <!-- Rows akan dimasukkan melalui JS -->
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
+
+                <!-- SUB-VIEW: PAPARAN RANKING -->
+                <div id="paparan_ranking" class="hidden">
+                    <div class="bg-yellow-50 border border-yellow-200 p-4 rounded-lg mb-6 flex flex-col md:flex-row justify-between items-center gap-4">
+                        <div>
+                            <h3 class="font-bold text-yellow-800 text-lg">Kedudukan Pasukan Mengikut Kategori</h3>
+                            <p class="text-sm text-yellow-700">Kedudukan ditentukan berdasarkan purata markah daripada semua juri yang menilai.</p>
+                        </div>
+                        <div class="w-full md:w-1/3">
+                            <label class="block text-sm font-bold mb-1 text-yellow-900">Papar Kategori:</label>
+                            <select id="filter_kategori_ranking" class="w-full px-2 py-1 border rounded focus:ring focus:ring-yellow-300" onchange="adminApp.renderRanking()">
+                                <option value="Semua">Semua Kategori (Asingkan)</option>
+                                <option value="Sekolah Rendah (Perdana)">Sekolah Rendah (Perdana)</option>
+                                <option value="Sekolah Rendah (PPKI)">Sekolah Rendah (PPKI)</option>
+                                <option value="Sekolah Menengah (Perdana)">Sekolah Menengah (Perdana)</option>
+                                <option value="Sekolah Menengah (PPKI)">Sekolah Menengah (PPKI)</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div id="container_ranking" class="space-y-8">
+                        <!-- Jadual ranking mengikut kategori dimasukkan melalui JS -->
+                    </div>
+                </div>
+
             </section>
 
             <!-- VIEW: BORANG PEMARKAHAN PASUKAN -->
@@ -152,8 +187,8 @@
                     <!-- Senarai Pemarkahan Juri -->
                     <div class="md:col-span-2">
                         <h3 class="font-bold text-lg mb-3">Rekod Pemarkahan Juri</h3>
-                        <div class="overflow-x-auto">
-                            <table class="min-w-full bg-white border">
+                        <div class="overflow-x-auto rounded border">
+                            <table class="min-w-full bg-white">
                                 <thead>
                                     <tr class="bg-gray-200 text-gray-700 text-xs leading-normal">
                                         <th class="py-2 px-3 text-left">Nama Juri</th>
@@ -315,6 +350,7 @@
         const adminApp = {
             dataPasukan: [],
             dataGuruPenuh: [],
+            dataPenilaian: [],
             currentPasukanId: null,
             currentVideoUrl: null,
 
@@ -336,6 +372,27 @@
                 document.getElementById('admin_pwd').value = '';
                 adminApp.dataPasukan = [];
                 adminApp.dataGuruPenuh = [];
+                adminApp.dataPenilaian = [];
+            },
+
+            togolPaparan: (jenis) => {
+                const elSenarai = document.getElementById('paparan_senarai');
+                const elRanking = document.getElementById('paparan_ranking');
+                const btnSenarai = document.getElementById('tab_senarai');
+                const btnRanking = document.getElementById('tab_ranking');
+
+                if (jenis === 'senarai') {
+                    elSenarai.classList.remove('hidden');
+                    elRanking.classList.add('hidden');
+                    btnSenarai.className = "bg-white text-gray-800 shadow px-4 py-1.5 rounded-md text-sm font-bold transition";
+                    btnRanking.className = "text-gray-600 hover:bg-gray-300 px-4 py-1.5 rounded-md text-sm font-bold transition";
+                } else {
+                    elSenarai.classList.add('hidden');
+                    elRanking.classList.remove('hidden');
+                    btnSenarai.className = "text-gray-600 hover:bg-gray-300 px-4 py-1.5 rounded-md text-sm font-bold transition";
+                    btnRanking.className = "bg-white text-gray-800 shadow px-4 py-1.5 rounded-md text-sm font-bold transition";
+                    adminApp.renderRanking(); // Kemas kini jadual ranking setiap kali dibuka
+                }
             },
 
             loadSenarai: async () => {
@@ -355,7 +412,7 @@
                     if (errPasukan) throw errPasukan;
                     adminApp.dataPasukan = dataPasukan;
                     
-                    // 2. Fetch data guru beserta count pasukan untuk mencari guru tiada pasukan
+                    // 2. Fetch data guru beserta count pasukan
                     const { data: dataGuru, error: errGuru } = await supabaseClientAdmin
                         .from('karnival_guru')
                         .select(`
@@ -365,12 +422,19 @@
                         `);
                         
                     if (errGuru) throw errGuru;
-                    
-                    // Simpan senarai guru sepenuhnya untuk fungsi filter
                     adminApp.dataGuruPenuh = dataGuru;
+
+                    // 3. Fetch data penilaian markah untuk sistem ranking
+                    const { data: dataPenilaian, error: errPenilaian } = await supabaseClientAdmin
+                        .from('karnival_penilaian')
+                        .select('pasukan_id, markah_tema, markah_visual, markah_kreativiti, markah_audio');
+                    
+                    if (errPenilaian) throw errPenilaian;
+                    adminApp.dataPenilaian = dataPenilaian;
 
                     adminApp.renderKadRingkasanGuru();
                     adminApp.renderTable();
+                    adminApp.renderRanking();
                 } catch (error) {
                     console.error("Ralat memuat senarai:", error);
                     Swal.fire('Ralat', 'Ralat memuat turun data.', 'error');
@@ -389,7 +453,6 @@
             },
 
             bukaModalGuru: (pertandingan, isAdaPasukan) => {
-                // Tapis data
                 const filteredGuru = adminApp.dataGuruPenuh.filter(g => {
                     const matchPertandingan = g.pertandingan === pertandingan;
                     const punyaPasukan = g.karnival_pasukan && g.karnival_pasukan.length > 0;
@@ -397,11 +460,10 @@
                     return matchPertandingan && matchPasukanState;
                 });
 
-                // Setup tajuk dan deskripsi
                 const titleEl = document.getElementById('modal_guru_title');
                 const descEl = document.getElementById('modal_guru_desc');
                 const listEl = document.getElementById('modal_guru_list');
-                listEl.innerHTML = ''; // Kosongkan senarai sebelumnya
+                listEl.innerHTML = ''; 
 
                 const statusStr = isAdaPasukan ? "Yang Mempunyai Pasukan" : "Yang BELUM Mempunyai Pasukan";
                 titleEl.textContent = `Senarai Guru (${pertandingan})`;
@@ -409,7 +471,6 @@
                 let textColorClass = isAdaPasukan ? 'text-green-600' : 'text-red-600 font-bold';
                 descEl.innerHTML = `Senarai guru pendaftaran <span class="font-bold">${pertandingan}</span> <span class="${textColorClass}">${statusStr}</span>. Jumlah: ${filteredGuru.length} orang.`;
 
-                // Render List
                 if (filteredGuru.length === 0) {
                     listEl.innerHTML = `<li class="text-center p-4 text-gray-500 italic bg-white rounded border">Tiada rekod.</li>`;
                 } else {
@@ -446,7 +507,6 @@
                     });
                 }
 
-                // Tunjukkan modal
                 document.getElementById('modal_senarai_guru').classList.remove('hidden');
             },
 
@@ -459,6 +519,7 @@
                 await adminApp.mintaPadamGuru(guru_id);
             },
 
+            // --- PAPARAN SENARAI ---
             renderTable: () => {
                 const fPertandingan = document.getElementById('filter_pertandingan').value;
                 const fKategori = document.getElementById('filter_kategori').value;
@@ -492,7 +553,7 @@
                 });
 
                 if (filtered.length === 0) {
-                    tbody.innerHTML = `<tr><td colspan="6" class="text-center py-4">Tiada rekod ditemui.</td></tr>`;
+                    tbody.innerHTML = `<tr><td colspan="6" class="text-center py-4 bg-white border-b">Tiada rekod ditemui.</td></tr>`;
                     return;
                 }
 
@@ -502,45 +563,46 @@
                     const muridStr = item.karnival_murid.map(m => `• ${m.nama} (${m.nokp})`).join('<br>');
                     
                     const link = item.pautan_hasil 
-                        ? `<a href="${item.pautan_hasil}" target="_blank" class="text-blue-500 hover:underline font-bold text-xs">Pautan</a>` 
-                        : `<span class="text-red-500 text-xs">Belum Hantar</span>`;
+                        ? `<button onclick="adminApp.tontonVideoPautan('${item.pautan_hasil}')" class="text-blue-600 hover:bg-blue-100 bg-blue-50 px-2 py-1.5 rounded-lg font-bold text-xs border border-blue-200 transition flex items-center justify-center gap-1 mx-auto w-full max-w-[120px] shadow-sm">▶️ Main Video</button>` 
+                        : `<span class="bg-gray-100 text-gray-500 px-2 py-1 rounded text-xs font-semibold inline-block border">Tiada Fail</span>`;
 
                     const statusBadge = item.disahkan 
-                        ? `<span class="bg-green-100 text-green-800 text-xs font-semibold px-2 py-1 rounded mb-1 inline-block">Disahkan</span>` 
-                        : `<span class="bg-yellow-100 text-yellow-800 text-xs font-semibold px-2 py-1 rounded mb-1 inline-block">Belum</span>`;
+                        ? `<span class="bg-green-100 text-green-800 text-xs font-bold px-2 py-1 rounded-md mb-1 inline-block border border-green-200">Disahkan</span>` 
+                        : `<span class="bg-yellow-100 text-yellow-800 text-xs font-bold px-2 py-1 rounded-md mb-1 inline-block border border-yellow-200">Menunggu</span>`;
 
                     const btnSahkan = (!item.disahkan && item.pautan_hasil)
-                        ? `<button onclick="adminApp.sahkanPasukan('${item.id}')" class="bg-blue-600 hover:bg-blue-700 text-white text-xs px-2 py-1 rounded w-full mb-1">✅ Sahkan</button>`
+                        ? `<button onclick="adminApp.sahkanPasukan('${item.id}')" class="bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold px-2 py-1.5 rounded w-full mb-1">✅ Sahkan</button>`
                         : '';
                     
                     const btnBatal = item.disahkan
-                        ? `<button onclick="adminApp.batalPengesahan('${item.id}')" class="bg-gray-500 hover:bg-gray-600 text-white text-xs px-2 py-1 rounded w-full mb-1">❌ Batal Sah</button>`
+                        ? `<button onclick="adminApp.batalPengesahan('${item.id}')" class="bg-gray-500 hover:bg-gray-600 text-white text-xs px-2 py-1.5 rounded w-full mb-1">❌ Batal Sah</button>`
                         : '';
 
-                    const btnPenilaian = `<button onclick="adminApp.bukaPenilaian('${item.id}')" class="bg-indigo-500 hover:bg-indigo-600 text-white text-xs px-2 py-1 rounded w-full mb-1">📊 Markah</button>`;
-                    const btnEdit = `<button onclick="adminApp.bukaBorangKemaskini('${item.id}')" class="bg-yellow-500 hover:bg-yellow-600 text-white text-xs px-2 py-1 rounded w-full mb-1">✏️ Edit</button>`;
-                    const btnPadam = `<button onclick="adminApp.mintaPadamPasukan('${item.id}')" class="bg-red-500 hover:bg-red-600 text-white text-xs px-2 py-1 rounded w-full">🗑️ Padam</button>`;
+                    const btnPenilaian = `<button onclick="adminApp.bukaPenilaian('${item.id}')" class="bg-indigo-500 hover:bg-indigo-600 text-white text-xs px-2 py-1.5 rounded w-full mb-1 shadow-sm">📊 Pemarkahan</button>`;
+                    const btnEdit = `<button onclick="adminApp.bukaBorangKemaskini('${item.id}')" class="bg-yellow-500 hover:bg-yellow-600 text-white text-xs px-2 py-1.5 rounded w-full mb-1">✏️ Edit</button>`;
+                    const btnPadam = `<button onclick="adminApp.mintaPadamPasukan('${item.id}')" class="bg-red-500 hover:bg-red-600 text-white text-xs px-2 py-1.5 rounded w-full">🗑️ Padam</button>`;
                     
-                    const btnPadamGuru = `<button onclick="adminApp.mintaPadamGuru('${guru.id}')" class="mt-2 text-xs text-red-600 hover:underline border border-red-200 px-1 py-0.5 rounded bg-red-50 w-full">Padam Guru Ini</button>`;
+                    const btnPadamGuru = `<button onclick="adminApp.mintaPadamGuru('${guru.id}')" class="mt-2 text-[11px] text-red-600 hover:bg-red-100 border border-red-200 px-1.5 py-1 rounded bg-red-50 w-full transition">Padam Keseluruhan Guru</button>`;
 
                     const tr = document.createElement('tr');
-                    tr.className = "border-b border-gray-200 hover:bg-gray-100";
+                    tr.className = "border-b border-gray-200 hover:bg-blue-50 transition";
                     tr.innerHTML = `
                         <td class="py-3 px-3 align-top">
-                            <div class="font-bold">${sekolah.nama} (${sekolah.kod})</div>
-                            <div class="text-xs text-gray-500 mt-1">Guru: ${guru.nama}</div>
-                            <div class="text-xs text-gray-500">No.Tel: ${guru.notel}</div>
+                            <div class="font-bold text-gray-800">${sekolah.nama}</div>
+                            <div class="text-xs font-semibold text-gray-500 mb-2">${sekolah.kod}</div>
+                            <div class="text-xs text-gray-700 font-semibold mt-1">👤 ${guru.nama}</div>
+                            <div class="text-xs text-gray-500">📞 ${guru.notel}</div>
                             ${btnPadamGuru}
                         </td>
                         <td class="py-3 px-3 align-top">
-                            <div class="font-bold text-indigo-700 mb-1">${item.nama_pasukan}</div>
-                            <div class="text-xs">${muridStr}</div>
+                            <div class="font-bold text-indigo-700 text-base mb-2">${item.nama_pasukan}</div>
+                            <div class="text-xs leading-relaxed text-gray-700">${muridStr}</div>
                         </td>
                         <td class="py-3 px-3 align-top">
-                            <div class="font-bold text-xs mb-1">${guru.pertandingan}</div>
-                            <div class="text-xs bg-gray-200 inline-block px-1 rounded">${guru.kategori_pertandingan}</div>
+                            <div class="font-bold text-xs mb-1 text-gray-800">${guru.pertandingan}</div>
+                            <div class="text-xs bg-gray-200 text-gray-700 font-semibold inline-block px-2 py-0.5 rounded">${guru.kategori_pertandingan}</div>
                         </td>
-                        <td class="py-3 px-3 text-center align-top">
+                        <td class="py-3 px-3 text-center align-middle">
                             ${link}
                         </td>
                         <td class="py-3 px-3 text-center align-top">
@@ -558,11 +620,169 @@
                 });
             },
 
-            // --- UTILITIES FORMAT ---
+            // --- PAPARAN RANKING ---
+            renderRanking: () => {
+                const fKategori = document.getElementById('filter_kategori_ranking').value;
+                const container = document.getElementById('container_ranking');
+                container.innerHTML = '';
+
+                // 1. Integrasi Markah dengan Pasukan
+                const pasukanMarkah = adminApp.dataPasukan.map(p => {
+                    const markahPasukan = adminApp.dataPenilaian.filter(m => m.pasukan_id === p.id);
+                    let purata = 0;
+                    
+                    if (markahPasukan.length > 0) {
+                        const jumlahSemuaJuri = markahPasukan.reduce((acc, curr) => {
+                            return acc + (curr.markah_tema + curr.markah_visual + curr.markah_kreativiti + curr.markah_audio);
+                        }, 0);
+                        purata = jumlahSemuaJuri / markahPasukan.length;
+                    }
+
+                    return {
+                        ...p,
+                        purataAkhir: parseFloat(purata.toFixed(2)),
+                        bilJuri: markahPasukan.length
+                    };
+                });
+
+                // 2. Kumpulan mengikut Kategori
+                const kumpulKategori = {};
+                pasukanMarkah.forEach(p => {
+                    if (!p.karnival_guru) return;
+                    const kat = p.karnival_guru.kategori_pertandingan;
+                    
+                    if (fKategori !== 'Semua' && kat !== fKategori) return;
+
+                    if (!kumpulKategori[kat]) {
+                        kumpulKategori[kat] = [];
+                    }
+                    kumpulKategori[kat].push(p);
+                });
+
+                if (Object.keys(kumpulKategori).length === 0) {
+                    container.innerHTML = `<div class="p-6 bg-white border rounded text-center text-gray-500 italic">Tiada rekod ditemui untuk tapisan ini.</div>`;
+                    return;
+                }
+
+                // 3. Render HTML bagi setiap kategori
+                for (const [kategori, senarai] of Object.entries(kumpulKategori)) {
+                    // Susun Markah Tinggi ke Rendah
+                    senarai.sort((a, b) => b.purataAkhir - a.purataAkhir);
+
+                    const section = document.createElement('div');
+                    section.className = "bg-white border shadow-sm rounded-lg overflow-hidden";
+                    
+                    const header = document.createElement('div');
+                    header.className = "bg-yellow-100 px-4 py-3 border-b border-yellow-200 flex justify-between items-center";
+                    header.innerHTML = `
+                        <h4 class="font-bold text-yellow-900 text-lg">${kategori}</h4>
+                        <span class="bg-yellow-500 text-white text-xs font-bold px-2 py-1 rounded-full">${senarai.length} Pasukan</span>
+                    `;
+                    section.appendChild(header);
+
+                    const tableWrapper = document.createElement('div');
+                    tableWrapper.className = "overflow-x-auto";
+                    
+                    let tableRows = '';
+                    if (senarai.length === 0) {
+                        tableRows = `<tr><td colspan="5" class="text-center py-4 italic text-gray-500">Tiada pasukan.</td></tr>`;
+                    } else {
+                        senarai.forEach((p, index) => {
+                            const sekolahNama = p.karnival_guru.karnival_sekolah.nama;
+                            
+                            // Visual Ranking Medal
+                            let rankHTML = `<span class="font-bold text-gray-600 text-lg">${index + 1}</span>`;
+                            if (index === 0) rankHTML = `<span class="text-2xl" title="Johan">🥇</span>`;
+                            else if (index === 1) rankHTML = `<span class="text-2xl" title="Naib Johan">🥈</span>`;
+                            else if (index === 2) rankHTML = `<span class="text-2xl" title="Ketiga">🥉</span>`;
+
+                            const linkVideo = p.pautan_hasil 
+                                ? `<button onclick="adminApp.tontonVideoPautan('${p.pautan_hasil}')" class="text-red-600 hover:bg-red-50 bg-white border border-red-200 px-2 py-1 rounded text-xs font-bold transition flex items-center justify-center mx-auto whitespace-nowrap">▶️ Pautan Video</button>`
+                                : `<span class="text-gray-400 text-xs italic">Tiada Pautan</span>`;
+
+                            let markahWarna = p.purataAkhir > 0 ? "text-indigo-700 font-black" : "text-gray-400 font-medium";
+
+                            tableRows += `
+                                <tr class="border-b last:border-b-0 hover:bg-yellow-50 transition">
+                                    <td class="py-3 px-4 text-center w-16 align-middle bg-gray-50">${rankHTML}</td>
+                                    <td class="py-3 px-4 align-middle">
+                                        <div class="font-bold text-gray-800 text-base">${p.nama_pasukan}</div>
+                                    </td>
+                                    <td class="py-3 px-4 align-middle">
+                                        <div class="text-sm font-semibold text-gray-600">${sekolahNama}</div>
+                                    </td>
+                                    <td class="py-3 px-4 text-center align-middle bg-indigo-50/30">
+                                        <div class="text-2xl ${markahWarna}">${p.purataAkhir.toFixed(2)}</div>
+                                        <div class="text-[10px] text-gray-500 font-semibold mt-0.5">${p.bilJuri} Juri Menilai</div>
+                                    </td>
+                                    <td class="py-3 px-4 text-center align-middle w-32">
+                                        ${linkVideo}
+                                    </td>
+                                </tr>
+                            `;
+                        });
+                    }
+
+                    tableWrapper.innerHTML = `
+                        <table class="min-w-full bg-white">
+                            <thead>
+                                <tr class="bg-gray-100 text-gray-600 text-xs uppercase leading-normal border-b">
+                                    <th class="py-2 px-4 text-center">Kedudukan</th>
+                                    <th class="py-2 px-4 text-left">Nama Pasukan</th>
+                                    <th class="py-2 px-4 text-left">Sekolah</th>
+                                    <th class="py-2 px-4 text-center">Purata Markah</th>
+                                    <th class="py-2 px-4 text-center">Rujukan</th>
+                                </tr>
+                            </thead>
+                            <tbody class="text-sm font-light">
+                                ${tableRows}
+                            </tbody>
+                        </table>
+                    `;
+                    section.appendChild(tableWrapper);
+                    container.appendChild(section);
+                }
+            },
+
+            // --- UTILITIES FORMAT & VIDEO UNIVERSAL ---
             toTitleCase: (str) => {
                 return str.toLowerCase().split(' ').map(word => {
                     return word.charAt(0).toUpperCase() + word.slice(1);
                 }).join(' ');
+            },
+
+            tontonVideoPautan: (url) => {
+                if (!url) return;
+
+                let embedUrl = url;
+                
+                // Regex untuk YouTube
+                if (url.includes('youtube.com') || url.includes('youtu.be')) {
+                    const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
+                    const match = url.match(regExp);
+                    if (match && match[2].length === 11) {
+                        embedUrl = 'https://www.youtube.com/embed/' + match[2];
+                    } else {
+                        Swal.fire('Ralat Pautan', 'Format pautan YouTube tidak disokong atau tidak sah.', 'error');
+                        return;
+                    }
+                } else if (url.includes('drive.google.com')) {
+                    // Tukar link Google Drive kepada format preview
+                    embedUrl = url.replace(/\/view.*$/, '/preview');
+                }
+
+                Swal.fire({
+                    title: 'Tonton Video Hasil',
+                    html: `<div style="position: relative; padding-bottom: 56.25%; height: 0; overflow: hidden; max-width: 100%; border-radius: 8px; border: 1px solid #e5e7eb; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);">
+                              <iframe src="${embedUrl}" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%;" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+                           </div>`,
+                    width: '800px',
+                    showCloseButton: true,
+                    showConfirmButton: false,
+                    customClass: {
+                        popup: 'rounded-xl'
+                    }
+                });
             },
 
             // --- FUNGSI PEMARKAHAN ---
@@ -624,35 +844,8 @@
             },
 
             tontonVideoSemasa: () => {
-                const url = adminApp.currentVideoUrl;
-                if (!url) return;
-
-                let embedUrl = url;
-                
-                // Regex untuk YouTube
-                if (url.includes('youtube.com') || url.includes('youtu.be')) {
-                    const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
-                    const match = url.match(regExp);
-                    if (match && match[2].length === 11) {
-                        embedUrl = 'https://www.youtube.com/embed/' + match[2];
-                    } else {
-                        Swal.fire('Ralat Pautan', 'Format pautan YouTube tidak disokong atau tidak sah.', 'error');
-                        return;
-                    }
-                } else if (url.includes('drive.google.com')) {
-                    // Tukar link Google Drive kepada format preview
-                    embedUrl = url.replace(/\/view.*$/, '/preview');
-                }
-
-                Swal.fire({
-                    title: 'Tonton Video Hasil',
-                    html: `<div style="position: relative; padding-bottom: 56.25%; height: 0; overflow: hidden; max-width: 100%; border-radius: 8px;">
-                              <iframe src="${embedUrl}" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%;" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
-                           </div>`,
-                    width: '800px',
-                    showCloseButton: true,
-                    showConfirmButton: false
-                });
+                // Gunakan fungsi universal
+                adminApp.tontonVideoPautan(adminApp.currentVideoUrl);
             },
 
             tutupPenilaian: () => {
@@ -660,6 +853,8 @@
                 adminApp.currentVideoUrl = null;
                 document.getElementById('view_penilaian').classList.add('hidden');
                 document.getElementById('view_dashboard').classList.remove('hidden');
+                // Auto refresh the list and ranking to reflect new scores
+                adminApp.loadSenarai(); 
             },
 
             loadPenilaian: async () => {
@@ -682,7 +877,7 @@
 
                     if (data.length === 0) {
                         tbody.innerHTML = `<tr><td colspan="7" class="text-center py-4 italic">Belum ada pemarkahan dimasukkan.</td></tr>`;
-                        document.getElementById('penilaian_purata').textContent = "0.0";
+                        document.getElementById('penilaian_purata').textContent = "0.00";
                     } else {
                         data.forEach(item => {
                             const total = item.markah_tema + item.markah_visual + item.markah_kreativiti + item.markah_audio;
@@ -692,11 +887,11 @@
                             tr.className = "border-b border-gray-200 hover:bg-gray-50";
                             tr.innerHTML = `
                                 <td class="py-2 px-3 font-bold">${item.nama_juri}</td>
-                                <td class="py-2 px-3 text-center text-blue-700">${item.markah_tema}</td>
-                                <td class="py-2 px-3 text-center text-green-700">${item.markah_visual}</td>
-                                <td class="py-2 px-3 text-center text-orange-700">${item.markah_kreativiti}</td>
-                                <td class="py-2 px-3 text-center text-purple-700">${item.markah_audio}</td>
-                                <td class="py-2 px-3 text-center font-bold text-lg">${total}</td>
+                                <td class="py-2 px-3 text-center text-blue-700 font-semibold">${item.markah_tema}</td>
+                                <td class="py-2 px-3 text-center text-green-700 font-semibold">${item.markah_visual}</td>
+                                <td class="py-2 px-3 text-center text-orange-700 font-semibold">${item.markah_kreativiti}</td>
+                                <td class="py-2 px-3 text-center text-purple-700 font-semibold">${item.markah_audio}</td>
+                                <td class="py-2 px-3 text-center font-bold text-lg text-indigo-800">${total}</td>
                                 <td class="py-2 px-3 text-center">
                                     <button onclick="adminApp.padamPenilaian('${item.id}')" class="text-red-500 hover:text-red-700 font-bold px-2 py-1">🗑️</button>
                                 </td>
@@ -704,7 +899,7 @@
                             tbody.appendChild(tr);
                         });
                         
-                        const purata = (jumlahKeseluruhan / data.length).toFixed(1);
+                        const purata = (jumlahKeseluruhan / data.length).toFixed(2);
                         document.getElementById('penilaian_purata').textContent = purata;
                     }
                 } catch (error) {
