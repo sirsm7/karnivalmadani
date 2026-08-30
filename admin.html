@@ -16,7 +16,7 @@
     <style>
         .hidden { display: none !important; }
         input { text-transform: uppercase; }
-        input[type="email"], input[id="admin_pwd"], input[id="edit_murid1_emel"], input[id="edit_murid2_emel"] { text-transform: none; }
+        input[type="email"], input[id="admin_pwd"], input[id="edit_murid1_emel"], input[id="edit_murid2_emel"], input[id="penilaian_nama_juri"] { text-transform: none; }
     </style>
 </head>
 <body class="bg-gray-100 min-h-screen font-sans text-gray-800">
@@ -85,15 +85,25 @@
                 <h3 class="font-bold text-lg mb-4 text-gray-800">Senarai Pasukan Berdaftar</h3>
 
                 <!-- Filters -->
-                <div class="bg-gray-50 p-4 rounded-lg mb-6 border flex gap-4">
-                    <div class="w-1/2">
+                <div class="bg-gray-50 p-4 rounded-lg mb-6 border flex flex-col md:flex-row gap-4">
+                    <div class="w-full md:w-1/3">
                         <label class="block text-sm font-bold mb-1">Tapis Pertandingan:</label>
                         <select id="filter_pertandingan" class="w-full px-2 py-1 border rounded" onchange="adminApp.renderTable()">
                             <option value="Semua">Semua Pertandingan</option>
                             <option value="Animasi AI">Pertandingan Video Animasi AI Kemerdekaan 2026</option>
                         </select>
                     </div>
-                    <div class="w-1/2">
+                    <div class="w-full md:w-1/3">
+                        <label class="block text-sm font-bold mb-1">Tapis Kategori:</label>
+                        <select id="filter_kategori" class="w-full px-2 py-1 border rounded" onchange="adminApp.renderTable()">
+                            <option value="Semua">Semua Kategori</option>
+                            <option value="Sekolah Rendah (Perdana)">Sekolah Rendah (Perdana)</option>
+                            <option value="Sekolah Rendah (PPKI)">Sekolah Rendah (PPKI)</option>
+                            <option value="Sekolah Menengah (Perdana)">Sekolah Menengah (Perdana)</option>
+                            <option value="Sekolah Menengah (PPKI)">Sekolah Menengah (PPKI)</option>
+                        </select>
+                    </div>
+                    <div class="w-full md:w-1/3">
                         <label class="block text-sm font-bold mb-1">Tapis Status:</label>
                         <select id="filter_status" class="w-full px-2 py-1 border rounded" onchange="adminApp.renderTable()">
                             <option value="Semua">Semua Status</option>
@@ -120,6 +130,81 @@
                             <!-- Rows akan dimasukkan melalui JS -->
                         </tbody>
                     </table>
+                </div>
+            </section>
+
+            <!-- VIEW: BORANG PEMARKAHAN PASUKAN -->
+            <section id="view_penilaian" class="hidden">
+                <button onclick="adminApp.tutupPenilaian()" class="text-gray-600 mb-4 hover:underline text-sm">&larr; Kembali ke Dashboard</button>
+                <div class="bg-indigo-50 border border-indigo-200 p-4 rounded-lg mb-6">
+                    <h2 class="text-xl font-bold text-indigo-800 border-b border-indigo-200 pb-2 mb-2">Penilaian Pasukan</h2>
+                    <p class="font-bold text-gray-800 text-lg" id="penilaian_pasukan_nama">-</p>
+                </div>
+
+                <div class="grid md:grid-cols-3 gap-6">
+                    <!-- Senarai Pemarkahan Juri -->
+                    <div class="md:col-span-2">
+                        <h3 class="font-bold text-lg mb-3">Rekod Pemarkahan Juri</h3>
+                        <div class="overflow-x-auto">
+                            <table class="min-w-full bg-white border">
+                                <thead>
+                                    <tr class="bg-gray-200 text-gray-700 text-xs leading-normal">
+                                        <th class="py-2 px-3 text-left">Nama Juri</th>
+                                        <th class="py-2 px-3 text-center">Tema (30)</th>
+                                        <th class="py-2 px-3 text-center">Visual (30)</th>
+                                        <th class="py-2 px-3 text-center">Kreativiti (20)</th>
+                                        <th class="py-2 px-3 text-center">Audio (20)</th>
+                                        <th class="py-2 px-3 text-center">Jumlah (100)</th>
+                                        <th class="py-2 px-3 text-center">Tindakan</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="table_body_penilaian" class="text-gray-600 text-sm">
+                                    <!-- Rows akan dimasukkan melalui JS -->
+                                </tbody>
+                                <tfoot>
+                                    <tr class="bg-indigo-100 font-bold text-indigo-900 border-t-2 border-indigo-300">
+                                        <td class="py-2 px-3 text-right" colspan="5">PURATA MARKAH KESELURUHAN:</td>
+                                        <td class="py-2 px-3 text-center text-lg" id="penilaian_purata">0.0</td>
+                                        <td></td>
+                                    </tr>
+                                </tfoot>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Borang Tambah Pemarkahan -->
+                    <div class="bg-white border rounded-lg p-4 shadow-sm h-fit">
+                        <h3 class="font-bold text-lg mb-3 border-b pb-2">Tambah Pemarkahan</h3>
+                        <form id="form_penilaian" onsubmit="adminApp.simpanPenilaian(event)">
+                            <div class="mb-3">
+                                <label class="block text-sm font-bold mb-1">Nama Juri:</label>
+                                <input type="text" id="penilaian_nama_juri" required class="w-full px-2 py-1 border rounded" placeholder="Cth: Juri 1">
+                            </div>
+                            <div class="grid grid-cols-2 gap-3 mb-3">
+                                <div>
+                                    <label class="block text-sm font-bold mb-1 text-blue-700">Tema & Mesej</label>
+                                    <input type="number" id="markah_tema" required min="0" max="30" class="w-full px-2 py-1 border rounded bg-blue-50 input-markah" placeholder="/ 30">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-bold mb-1 text-green-700">Kualiti Visual</label>
+                                    <input type="number" id="markah_visual" required min="0" max="30" class="w-full px-2 py-1 border rounded bg-green-50 input-markah" placeholder="/ 30">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-bold mb-1 text-orange-700">Kreativiti</label>
+                                    <input type="number" id="markah_kreativiti" required min="0" max="20" class="w-full px-2 py-1 border rounded bg-orange-50 input-markah" placeholder="/ 20">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-bold mb-1 text-purple-700">Audio</label>
+                                    <input type="number" id="markah_audio" required min="0" max="20" class="w-full px-2 py-1 border rounded bg-purple-50 input-markah" placeholder="/ 20">
+                                </div>
+                            </div>
+                            <div class="bg-gray-100 p-2 rounded mb-4 text-center border">
+                                <span class="text-sm font-bold">Jumlah Markah: </span>
+                                <span class="text-xl font-black text-indigo-700" id="paparan_jumlah_markah">0</span><span class="text-sm font-bold text-gray-500"> / 100</span>
+                            </div>
+                            <button type="submit" class="w-full bg-indigo-600 text-white font-bold py-2 px-4 rounded hover:bg-indigo-700 transition">Simpan Markah</button>
+                        </form>
+                    </div>
                 </div>
             </section>
 
@@ -219,6 +304,7 @@
         const adminApp = {
             dataPasukan: [],
             dataGuruPenuh: [],
+            currentPasukanId: null,
 
             login: (e) => {
                 e.preventDefault();
@@ -357,15 +443,13 @@
             },
             
             mintaPadamGuruDariModal: async (guru_id) => {
-                // Tutup modal sebentar supaya Swal2 tidak tertindih atau konflik z-index (best practice)
                 adminApp.tutupModalGuru();
                 await adminApp.mintaPadamGuru(guru_id);
-                // Kita tidak perlu buka semula modal automatik kerana loadSenarai akan dijalankan 
-                // jika padam berjaya, biarkan pengguna klik semula kad yang mereka mahu.
             },
 
             renderTable: () => {
                 const fPertandingan = document.getElementById('filter_pertandingan').value;
+                const fKategori = document.getElementById('filter_kategori').value;
                 const fStatus = document.getElementById('filter_status').value;
                 const tbody = document.getElementById('table_body');
                 
@@ -380,6 +464,11 @@
                         matchPertandingan = guru.pertandingan === fPertandingan;
                     }
 
+                    let matchKategori = true;
+                    if (fKategori !== 'Semua') {
+                        matchKategori = guru.kategori_pertandingan === fKategori;
+                    }
+
                     let matchStatus = true;
                     if (fStatus === 'Menunggu') {
                         matchStatus = item.disahkan === false;
@@ -387,7 +476,7 @@
                         matchStatus = item.disahkan === true;
                     }
 
-                    return matchPertandingan && matchStatus;
+                    return matchPertandingan && matchKategori && matchStatus;
                 });
 
                 if (filtered.length === 0) {
@@ -416,6 +505,7 @@
                         ? `<button onclick="adminApp.batalPengesahan('${item.id}')" class="bg-gray-500 hover:bg-gray-600 text-white text-xs px-2 py-1 rounded w-full mb-1">❌ Batal Sah</button>`
                         : '';
 
+                    const btnPenilaian = `<button onclick="adminApp.bukaPenilaian('${item.id}')" class="bg-indigo-500 hover:bg-indigo-600 text-white text-xs px-2 py-1 rounded w-full mb-1">📊 Markah</button>`;
                     const btnEdit = `<button onclick="adminApp.bukaBorangKemaskini('${item.id}')" class="bg-yellow-500 hover:bg-yellow-600 text-white text-xs px-2 py-1 rounded w-full mb-1">✏️ Edit</button>`;
                     const btnPadam = `<button onclick="adminApp.mintaPadamPasukan('${item.id}')" class="bg-red-500 hover:bg-red-600 text-white text-xs px-2 py-1 rounded w-full">🗑️ Padam</button>`;
                     
@@ -447,6 +537,7 @@
                         <td class="py-3 px-3 text-center align-top w-28">
                             ${btnSahkan}
                             ${btnBatal}
+                            ${btnPenilaian}
                             ${btnEdit}
                             ${btnPadam}
                         </td>
@@ -454,6 +545,157 @@
                     tbody.appendChild(tr);
                 });
             },
+
+            // --- FUNGSI PEMARKAHAN ---
+            bukaPenilaian: (pasukan_id) => {
+                const pasukan = adminApp.dataPasukan.find(p => p.id === pasukan_id);
+                if (!pasukan) return;
+
+                adminApp.currentPasukanId = pasukan_id;
+                document.getElementById('penilaian_pasukan_nama').textContent = pasukan.nama_pasukan;
+                
+                // Reset form
+                document.getElementById('form_penilaian').reset();
+                document.getElementById('paparan_jumlah_markah').textContent = '0';
+
+                document.getElementById('view_dashboard').classList.add('hidden');
+                document.getElementById('view_penilaian').classList.remove('hidden');
+
+                adminApp.loadPenilaian();
+            },
+
+            tutupPenilaian: () => {
+                adminApp.currentPasukanId = null;
+                document.getElementById('view_penilaian').classList.add('hidden');
+                document.getElementById('view_dashboard').classList.remove('hidden');
+            },
+
+            loadPenilaian: async () => {
+                if (!adminApp.currentPasukanId) return;
+                
+                document.getElementById('loading_overlay').classList.remove('hidden');
+                try {
+                    const { data, error } = await supabaseClientAdmin
+                        .from('karnival_penilaian')
+                        .select('*')
+                        .eq('pasukan_id', adminApp.currentPasukanId)
+                        .order('created_at', { ascending: true });
+
+                    if (error) throw error;
+                    
+                    const tbody = document.getElementById('table_body_penilaian');
+                    tbody.innerHTML = '';
+                    
+                    let jumlahKeseluruhan = 0;
+
+                    if (data.length === 0) {
+                        tbody.innerHTML = `<tr><td colspan="7" class="text-center py-4 italic">Belum ada pemarkahan dimasukkan.</td></tr>`;
+                        document.getElementById('penilaian_purata').textContent = "0.0";
+                    } else {
+                        data.forEach(item => {
+                            const total = item.markah_tema + item.markah_visual + item.markah_kreativiti + item.markah_audio;
+                            jumlahKeseluruhan += total;
+
+                            const tr = document.createElement('tr');
+                            tr.className = "border-b border-gray-200 hover:bg-gray-50";
+                            tr.innerHTML = `
+                                <td class="py-2 px-3 font-bold">${item.nama_juri}</td>
+                                <td class="py-2 px-3 text-center text-blue-700">${item.markah_tema}</td>
+                                <td class="py-2 px-3 text-center text-green-700">${item.markah_visual}</td>
+                                <td class="py-2 px-3 text-center text-orange-700">${item.markah_kreativiti}</td>
+                                <td class="py-2 px-3 text-center text-purple-700">${item.markah_audio}</td>
+                                <td class="py-2 px-3 text-center font-bold text-lg">${total}</td>
+                                <td class="py-2 px-3 text-center">
+                                    <button onclick="adminApp.padamPenilaian('${item.id}')" class="text-red-500 hover:text-red-700 font-bold px-2 py-1">🗑️</button>
+                                </td>
+                            `;
+                            tbody.appendChild(tr);
+                        });
+                        
+                        const purata = (jumlahKeseluruhan / data.length).toFixed(1);
+                        document.getElementById('penilaian_purata').textContent = purata;
+                    }
+                } catch (error) {
+                    console.error("Ralat loadPenilaian:", error);
+                    Swal.fire('Ralat', 'Gagal memuatkan rekod pemarkahan.', 'error');
+                } finally {
+                    document.getElementById('loading_overlay').classList.add('hidden');
+                }
+            },
+
+            simpanPenilaian: async (e) => {
+                e.preventDefault();
+                
+                const juri = document.getElementById('penilaian_nama_juri').value.trim();
+                const tema = parseInt(document.getElementById('markah_tema').value) || 0;
+                const visual = parseInt(document.getElementById('markah_visual').value) || 0;
+                const kreativiti = parseInt(document.getElementById('markah_kreativiti').value) || 0;
+                const audio = parseInt(document.getElementById('markah_audio').value) || 0;
+
+                if (tema > 30 || visual > 30 || kreativiti > 20 || audio > 20) {
+                    Swal.fire('Ralat Markah', 'Pastikan markah yang dimasukkan tidak melebihi had yang ditetapkan.', 'error');
+                    return;
+                }
+
+                document.getElementById('loading_overlay').classList.remove('hidden');
+                
+                try {
+                    const { error } = await supabaseClientAdmin
+                        .from('karnival_penilaian')
+                        .insert([{
+                            pasukan_id: adminApp.currentPasukanId,
+                            nama_juri: juri,
+                            markah_tema: tema,
+                            markah_visual: visual,
+                            markah_kreativiti: kreativiti,
+                            markah_audio: audio
+                        }]);
+
+                    if (error) throw error;
+                    
+                    document.getElementById('form_penilaian').reset();
+                    document.getElementById('paparan_jumlah_markah').textContent = '0';
+                    Swal.fire({ toast: true, position: 'top-end', icon: 'success', title: 'Markah disimpan', showConfirmButton: false, timer: 2000 });
+                    
+                    adminApp.loadPenilaian();
+                } catch (error) {
+                    console.error("Ralat simpanPenilaian:", error);
+                    Swal.fire('Ralat', 'Gagal menyimpan rekod pemarkahan.', 'error');
+                } finally {
+                    document.getElementById('loading_overlay').classList.add('hidden');
+                }
+            },
+
+            padamPenilaian: async (penilaian_id) => {
+                const result = await Swal.fire({
+                    title: 'Padam Markah?',
+                    text: 'Tindakan ini tidak boleh dipatahbalik.',
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonText: 'Ya, Padam',
+                    cancelButtonText: 'Batal'
+                });
+
+                if (result.isConfirmed) {
+                    document.getElementById('loading_overlay').classList.remove('hidden');
+                    try {
+                        const { error } = await supabaseClientAdmin
+                            .from('karnival_penilaian')
+                            .delete()
+                            .eq('id', penilaian_id);
+
+                        if (error) throw error;
+                        adminApp.loadPenilaian();
+                    } catch (error) {
+                        console.error("Ralat padamPenilaian:", error);
+                        Swal.fire('Ralat', 'Gagal memadam rekod pemarkahan.', 'error');
+                    } finally {
+                        document.getElementById('loading_overlay').classList.add('hidden');
+                    }
+                }
+            },
+
+            // --- END FUNGSI PEMARKAHAN ---
 
             sahkanPasukan: async (id) => {
                 const result = await Swal.fire({
@@ -645,6 +887,22 @@
                 }
             }
         };
+
+        // Event listener untuk kemas kini paparan jumlah markah borang pemarkahan
+        document.addEventListener('DOMContentLoaded', () => {
+            const markahInputs = document.querySelectorAll('.input-markah');
+            const paparJumlah = document.getElementById('paparan_jumlah_markah');
+
+            markahInputs.forEach(input => {
+                input.addEventListener('input', () => {
+                    let total = 0;
+                    markahInputs.forEach(inp => {
+                        total += parseInt(inp.value) || 0;
+                    });
+                    paparJumlah.textContent = total;
+                });
+            });
+        });
     </script>
 </body>
 </html>
