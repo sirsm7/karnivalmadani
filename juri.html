@@ -345,9 +345,10 @@
                     if (errPasukan) throw errPasukan;
                     
                     // Filter pasukan khusus untuk pertandingan Animasi AI sahaja 
+                    // dan pastikan hanya pasukan yang TELAH DISAHKAN oleh admin sahaja dipaparkan
                     // dan pasang maklumat sama ada juri SEMASA sudah menilai atau belum
                     juriApp.dataPasukan = dataPasukan
-                        .filter(p => p.karnival_guru && p.karnival_guru.pertandingan === 'Animasi AI')
+                        .filter(p => p.karnival_guru && p.karnival_guru.pertandingan === 'Animasi AI' && p.disahkan === true)
                         .map(p => {
                             const rekodJuriIni = p.karnival_penilaian.find(k => k.nama_juri === juriApp.juriName);
                             return {
