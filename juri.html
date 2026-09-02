@@ -1,0 +1,613 @@
+<!DOCTYPE html>
+<html lang="ms">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Panel Juri - Karnival Pendidikan Madani</title>
+    <!-- Favicon -->
+    <link rel="icon" type="image/png" href="LogoPPDAG.png">
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- SweetAlert2 -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <!-- Supabase JS -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    
+    <style>
+        .hidden { display: none !important; }
+        /* Format Title Case untuk nama juri */
+        input[id="juri_nama_input"] { text-transform: capitalize; }
+        input[id="juri_pwd"] { text-transform: none; }
+    </style>
+</head>
+<body class="bg-gray-100 min-h-screen font-sans text-gray-800">
+
+    <div class="max-w-6xl mx-auto px-4 py-8">
+        
+        <!-- Header Juri -->
+        <header class="bg-white shadow-md rounded-lg p-6 mb-8 text-center flex flex-col md:flex-row items-center justify-center gap-4 border-t-4 border-green-600">
+            <img src="LogoPPDAG.png" alt="Logo" class="h-16 object-contain">
+            <div>
+                <h1 class="text-2xl font-bold text-green-800">PANEL PENILAIAN JURI</h1>
+                <p class="text-gray-600 font-semibold">Karnival Pendidikan Madani PPD Alor Gajah 2026</p>
+            </div>
+        </header>
+
+        <main id="app_container" class="bg-white shadow-md rounded-lg p-6">
+            
+            <!-- VIEW: LOGIN JURI -->
+            <section id="view_login">
+                <div class="max-w-md mx-auto py-8">
+                    <h2 class="text-xl font-bold border-b pb-2 mb-6 text-center text-gray-800">Log Masuk Juri</h2>
+                    <form id="form_login" onsubmit="juriApp.login(event)">
+                        
+                        <div class="mb-4">
+                            <label class="block text-gray-700 font-bold mb-2">Nama Penuh Juri:</label>
+                            <input type="text" id="juri_nama_input" list="senarai_juri_sedia_ada" required class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500" placeholder="Masukkan nama penuh anda...">
+                            <datalist id="senarai_juri_sedia_ada">
+                                <!-- Senarai juri ditarik dari pangkalan data akan diletakkan di sini -->
+                            </datalist>
+                            <p class="text-[11px] text-gray-500 mt-1">Sila taip nama anda dengan betul atau pilih dari senarai sekiranya pernah mendaftar sebelum ini.</p>
+                        </div>
+
+                        <div class="mb-6">
+                            <label class="block text-gray-700 font-bold mb-2">Katalaluan Juri:</label>
+                            <input type="password" id="juri_pwd" required class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500" placeholder="Katalaluan lalai...">
+                        </div>
+
+                        <button type="submit" class="w-full bg-green-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-green-700 transition shadow-sm">Mula Menilai</button>
+                    </form>
+                    <div class="mt-6 text-center border-t pt-4">
+                        <a href="index.html" class="text-sm text-blue-500 hover:underline">&larr; Kembali ke Laman Utama (Peserta)</a>
+                    </div>
+                </div>
+            </section>
+
+            <!-- VIEW: DASHBOARD JURI -->
+            <section id="view_dashboard" class="hidden">
+                <div class="flex flex-col md:flex-row justify-between items-start md:items-center border-b pb-4 mb-6 gap-4">
+                    <div>
+                        <h2 class="text-xl font-bold text-gray-800">Senarai Pasukan Penilaian</h2>
+                        <p class="text-sm text-green-700 font-semibold mt-1">Selamat bertugas, <span id="paparan_nama_juri_header" class="uppercase font-black text-green-900"></span></p>
+                    </div>
+                    
+                    <div class="flex flex-wrap items-center gap-2">
+                        <button onclick="juriApp.loadSenaraiPasukan()" class="text-blue-600 text-sm hover:underline font-bold bg-blue-50 px-3 py-1.5 rounded border border-blue-200">🔄 Segarkan Senarai</button>
+                        <button onclick="juriApp.logout()" class="text-red-500 text-sm hover:underline font-bold bg-red-50 px-3 py-1.5 rounded border border-red-200">Keluar Sistem</button>
+                    </div>
+                </div>
+
+                <!-- Filters -->
+                <div class="bg-gray-50 p-4 rounded-lg mb-6 border flex flex-col md:flex-row gap-4">
+                    <div class="w-full md:w-1/2">
+                        <label class="block text-sm font-bold mb-1">Tapis Kategori:</label>
+                        <select id="filter_kategori" class="w-full px-2 py-1.5 border rounded focus:ring focus:ring-green-200" onchange="juriApp.renderTable()">
+                            <option value="Semua">Semua Kategori</option>
+                            <option value="Sekolah Rendah (Perdana)">Sekolah Rendah (Perdana)</option>
+                            <option value="Sekolah Rendah (PPKI)">Sekolah Rendah (PPKI)</option>
+                            <option value="Sekolah Menengah (Perdana)">Sekolah Menengah (Perdana)</option>
+                            <option value="Sekolah Menengah (PPKI)">Sekolah Menengah (PPKI)</option>
+                        </select>
+                    </div>
+                    <div class="w-full md:w-1/2">
+                        <label class="block text-sm font-bold mb-1">Status Penilaian Anda:</label>
+                        <select id="filter_status_nilai" class="w-full px-2 py-1.5 border rounded focus:ring focus:ring-green-200" onchange="juriApp.renderTable()">
+                            <option value="Semua">Semua Pasukan</option>
+                            <option value="Belum">Belum Dinilai</option>
+                            <option value="Selesai">Selesai Dinilai</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Senarai Penuh Pasukan -->
+                <div class="overflow-x-auto rounded-lg border shadow-sm">
+                    <table class="min-w-full bg-white">
+                        <thead>
+                            <tr class="bg-green-700 text-white text-sm leading-normal">
+                                <th class="py-3 px-3 text-center w-10">Bil</th>
+                                <th class="py-3 px-3 text-left w-1/4">Sekolah</th>
+                                <th class="py-3 px-3 text-left w-1/4">Nama Pasukan</th>
+                                <th class="py-3 px-3 text-left">Kategori</th>
+                                <th class="py-3 px-3 text-center">Video Hasil</th>
+                                <th class="py-3 px-3 text-center">Status Anda</th>
+                                <th class="py-3 px-3 text-center">Tindakan</th>
+                            </tr>
+                        </thead>
+                        <tbody id="table_body_pasukan" class="text-gray-600 text-sm font-light">
+                            <!-- Rows akan dimasukkan melalui JS -->
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <!-- VIEW: BORANG PEMARKAHAN KHUSUS JURI -->
+            <section id="view_penilaian" class="hidden">
+                <button onclick="juriApp.tutupPenilaian()" class="text-gray-600 mb-4 hover:underline text-sm font-semibold">&larr; Kembali ke Senarai Pasukan</button>
+                
+                <div class="bg-green-50 border-2 border-green-200 p-5 rounded-lg mb-6 flex flex-col md:flex-row md:justify-between items-start md:items-center gap-4">
+                    <div>
+                        <h2 class="text-xl font-black text-green-800 mb-1">Borang Penilaian Pasukan</h2>
+                        <p class="font-bold text-gray-800 text-2xl" id="penilaian_pasukan_nama">-</p>
+                        <p class="text-sm text-green-700 font-semibold mt-1" id="penilaian_sekolah_nama">-</p>
+                    </div>
+                    <div class="w-full md:w-auto text-right">
+                        <button id="btn_tonton_video" onclick="juriApp.tontonVideoSemasa()" class="w-full md:w-auto bg-red-600 hover:bg-red-700 text-white font-bold py-2.5 px-6 rounded-lg shadow-md transition flex items-center justify-center gap-2 text-lg">
+                            ▶️ Tonton Video
+                        </button>
+                        <p id="teks_tiada_video" class="hidden text-sm text-red-600 font-bold mt-2">Peserta belum menghantar pautan video.</p>
+                    </div>
+                </div>
+
+                <div class="max-w-2xl mx-auto bg-white border rounded-lg p-6 shadow-sm">
+                    <h3 class="font-bold text-lg mb-4 border-b pb-2 text-gray-800 flex justify-between items-center">
+                        <span>Pemarkahan Anda</span>
+                        <span class="text-xs bg-gray-200 text-gray-700 px-2 py-1 rounded font-normal">Nama Juri: <span id="paparan_borang_nama_juri" class="font-bold"></span></span>
+                    </h3>
+                    
+                    <form id="form_penilaian" onsubmit="juriApp.simpanPenilaian(event)">
+                        <input type="hidden" id="rekod_penilaian_id"> <!-- Disimpan jika rekod sedia ada -->
+
+                        <div class="space-y-6">
+                            <!-- Kriteria 1: Tema & Mesej -->
+                            <div class="bg-blue-50 p-4 rounded border border-blue-100 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                                <div>
+                                    <label class="block font-bold text-blue-900 text-base">Tema & Mesej (30 Markah)</label>
+                                    <p class="text-xs text-blue-700 mt-0.5">Kesesuaian tema kemerdekaan, kekuatan mesej, dan kejelasan penceritaan AI.</p>
+                                </div>
+                                <div class="w-full sm:w-24 flex-shrink-0">
+                                    <input type="number" id="markah_tema" required min="0" max="30" class="w-full px-3 py-2 border rounded text-center text-lg font-bold input-markah" placeholder="0-30">
+                                </div>
+                            </div>
+
+                            <!-- Kriteria 2: Kualiti Visual -->
+                            <div class="bg-teal-50 p-4 rounded border border-teal-100 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                                <div>
+                                    <label class="block font-bold text-teal-900 text-base">Kualiti Visual (30 Markah)</label>
+                                    <p class="text-xs text-teal-700 mt-0.5">Estetika, kualiti janaan AI, transisi, komposisi warna dan kehalusan grafik.</p>
+                                </div>
+                                <div class="w-full sm:w-24 flex-shrink-0">
+                                    <input type="number" id="markah_visual" required min="0" max="30" class="w-full px-3 py-2 border rounded text-center text-lg font-bold input-markah" placeholder="0-30">
+                                </div>
+                            </div>
+
+                            <!-- Kriteria 3: Kreativiti -->
+                            <div class="bg-orange-50 p-4 rounded border border-orange-100 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                                <div>
+                                    <label class="block font-bold text-orange-900 text-base">Kreativiti & Keaslian (20 Markah)</label>
+                                    <p class="text-xs text-orange-700 mt-0.5">Pendekatan unik, olahan prompt AI yang pelbagai, dan elemen 'wow' faktor.</p>
+                                </div>
+                                <div class="w-full sm:w-24 flex-shrink-0">
+                                    <input type="number" id="markah_kreativiti" required min="0" max="20" class="w-full px-3 py-2 border rounded text-center text-lg font-bold input-markah" placeholder="0-20">
+                                </div>
+                            </div>
+
+                            <!-- Kriteria 4: Audio -->
+                            <div class="bg-purple-50 p-4 rounded border border-purple-100 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                                <div>
+                                    <label class="block font-bold text-purple-900 text-base">Audio & Kesan Bunyi (20 Markah)</label>
+                                    <p class="text-xs text-purple-700 mt-0.5">Pilihan muzik latar, suara latar janaan AI (jika ada), dan penyuntingan bunyi.</p>
+                                </div>
+                                <div class="w-full sm:w-24 flex-shrink-0">
+                                    <input type="number" id="markah_audio" required min="0" max="20" class="w-full px-3 py-2 border rounded text-center text-lg font-bold input-markah" placeholder="0-20">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Ringkasan Markah -->
+                        <div class="mt-6 bg-gray-100 p-4 rounded-lg border-2 border-gray-300 text-center flex items-center justify-center gap-4">
+                            <span class="text-lg font-bold text-gray-700">Jumlah Markah Keseluruhan: </span>
+                            <div class="bg-white px-4 py-2 rounded shadow-sm border font-black text-3xl text-green-700">
+                                <span id="paparan_jumlah_markah">0</span><span class="text-base text-gray-500 ml-1">/ 100</span>
+                            </div>
+                        </div>
+
+                        <div class="mt-8">
+                            <button type="submit" class="w-full bg-green-600 text-white font-black py-4 px-4 rounded-lg hover:bg-green-700 transition shadow-lg text-lg">💾 Simpan & Hantar Markah</button>
+                        </div>
+                    </form>
+                </div>
+            </section>
+
+        </main>
+    </div>
+
+    <!-- Loading Overlay -->
+    <div id="loading_overlay" class="fixed inset-0 bg-black bg-opacity-60 z-50 hidden flex items-center justify-center backdrop-blur-sm">
+        <div class="bg-white p-6 rounded-lg shadow-xl text-center">
+            <div class="inline-block animate-spin rounded-full h-10 w-10 border-b-4 border-green-600 mb-4"></div>
+            <p class="font-bold text-gray-800">Menyegerak Data...</p>
+        </div>
+    </div>
+
+    <script>
+        // Supabase Constants
+        const SUPABASE_URL = "https://app.tech4ag.my";
+        const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYW5vbiIsImlzcyI6InN1cGFiYXNlIiwiaWF0IjoxNzYzMzczNjQ1LCJleHAiOjIwNzg3MzM2NDV9.vZOedqJzUn01PjwfaQp7VvRzSm4aRMr21QblPDK8AoY";
+        const supabaseClientJuri = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+        const juriApp = {
+            juriName: null,
+            dataPasukan: [],
+            currentPasukanId: null,
+            currentVideoUrl: null,
+
+            init: () => {
+                // Semak jika sesi juri wujud di local storage
+                const savedName = localStorage.getItem('karnival_juri_session');
+                if (savedName) {
+                    juriApp.juriName = savedName;
+                    document.getElementById('view_login').classList.add('hidden');
+                    document.getElementById('view_dashboard').classList.remove('hidden');
+                    document.getElementById('paparan_nama_juri_header').textContent = juriApp.juriName;
+                    juriApp.loadSenaraiPasukan();
+                } else {
+                    juriApp.loadSenaraiJuriDropdown();
+                }
+
+                // Setup listener untuk auto-kiraan markah
+                const markahInputs = document.querySelectorAll('.input-markah');
+                const paparJumlah = document.getElementById('paparan_jumlah_markah');
+
+                markahInputs.forEach(input => {
+                    input.addEventListener('input', () => {
+                        let total = 0;
+                        markahInputs.forEach(inp => {
+                            total += parseInt(inp.value) || 0;
+                        });
+                        paparJumlah.textContent = total;
+                    });
+                });
+            },
+
+            toTitleCase: (str) => {
+                return str.toLowerCase().split(' ').map(word => {
+                    return word.charAt(0).toUpperCase() + word.slice(1);
+                }).join(' ');
+            },
+
+            loadSenaraiJuriDropdown: async () => {
+                try {
+                    const { data, error } = await supabaseClientJuri
+                        .from('karnival_penilaian')
+                        .select('nama_juri');
+                    
+                    if (error) throw error;
+                    
+                    if (data && data.length > 0) {
+                        const uniqueJuri = [...new Set(data.map(item => item.nama_juri))];
+                        const datalist = document.getElementById('senarai_juri_sedia_ada');
+                        datalist.innerHTML = '';
+                        
+                        uniqueJuri.forEach(nama => {
+                            const opt = document.createElement('option');
+                            opt.value = nama;
+                            datalist.appendChild(opt);
+                        });
+                    }
+                } catch (error) {
+                    console.error("Ralat memuatkan senarai juri dropdown:", error);
+                }
+            },
+
+            login: (e) => {
+                e.preventDefault();
+                const pwd = document.getElementById('juri_pwd').value;
+                const namaInput = document.getElementById('juri_nama_input').value.trim();
+
+                if (pwd === 'juri@12345') {
+                    if (namaInput === '') {
+                        Swal.fire('Ralat', 'Sila masukkan nama anda.', 'error');
+                        return;
+                    }
+
+                    juriApp.juriName = juriApp.toTitleCase(namaInput);
+                    localStorage.setItem('karnival_juri_session', juriApp.juriName);
+                    
+                    document.getElementById('view_login').classList.add('hidden');
+                    document.getElementById('view_dashboard').classList.remove('hidden');
+                    document.getElementById('paparan_nama_juri_header').textContent = juriApp.juriName;
+                    
+                    juriApp.loadSenaraiPasukan();
+                } else {
+                    Swal.fire('Ralat', 'Katalaluan Juri Salah!', 'error');
+                }
+            },
+
+            logout: () => {
+                juriApp.juriName = null;
+                juriApp.dataPasukan = [];
+                localStorage.removeItem('karnival_juri_session');
+                
+                document.getElementById('view_dashboard').classList.add('hidden');
+                document.getElementById('view_penilaian').classList.add('hidden');
+                document.getElementById('view_login').classList.remove('hidden');
+                document.getElementById('juri_pwd').value = '';
+                
+                juriApp.loadSenaraiJuriDropdown();
+            },
+
+            loadSenaraiPasukan: async () => {
+                if (!juriApp.juriName) return;
+
+                document.getElementById('loading_overlay').classList.remove('hidden');
+                
+                try {
+                    // Dapatkan semua pasukan dan markah
+                    const { data: dataPasukan, error: errPasukan } = await supabaseClientJuri
+                        .from('karnival_pasukan')
+                        .select(`
+                            id, nama_pasukan, pautan_hasil, disahkan,
+                            karnival_guru ( pertandingan, kategori_pertandingan, karnival_sekolah (kod, nama) ),
+                            karnival_penilaian ( id, nama_juri, markah_tema, markah_visual, markah_kreativiti, markah_audio )
+                        `)
+                        .order('created_at', { ascending: true });
+
+                    if (errPasukan) throw errPasukan;
+                    
+                    // Filter pasukan khusus untuk pertandingan Animasi AI sahaja 
+                    // dan pasang maklumat sama ada juri SEMASA sudah menilai atau belum
+                    juriApp.dataPasukan = dataPasukan
+                        .filter(p => p.karnival_guru && p.karnival_guru.pertandingan === 'Animasi AI')
+                        .map(p => {
+                            const rekodJuriIni = p.karnival_penilaian.find(k => k.nama_juri === juriApp.juriName);
+                            return {
+                                ...p,
+                                markah_juri_ini: rekodJuriIni || null, // null bermaksud belum dinilai oleh juri ini
+                                isDinilaiOlehSistem: !!rekodJuriIni
+                            };
+                        });
+
+                    juriApp.renderTable();
+                } catch (error) {
+                    console.error("Ralat memuat senarai pasukan:", error);
+                    Swal.fire('Ralat', 'Gagal memuat turun data pasukan.', 'error');
+                } finally {
+                    document.getElementById('loading_overlay').classList.add('hidden');
+                }
+            },
+
+            renderTable: () => {
+                const fKategori = document.getElementById('filter_kategori').value;
+                const fStatusNilai = document.getElementById('filter_status_nilai').value;
+                const tbody = document.getElementById('table_body_pasukan');
+                
+                tbody.innerHTML = '';
+
+                let filtered = juriApp.dataPasukan.filter(item => {
+                    const kategori = item.karnival_guru.kategori_pertandingan;
+                    
+                    let matchKategori = true;
+                    if (fKategori !== 'Semua') {
+                        matchKategori = kategori === fKategori;
+                    }
+
+                    let matchStatus = true;
+                    if (fStatusNilai === 'Belum') {
+                        matchStatus = !item.isDinilaiOlehSistem;
+                    } else if (fStatusNilai === 'Selesai') {
+                        matchStatus = item.isDinilaiOlehSistem;
+                    }
+
+                    return matchKategori && matchStatus;
+                });
+
+                if (filtered.length === 0) {
+                    tbody.innerHTML = `<tr><td colspan="7" class="text-center py-6 bg-white border-b italic text-gray-500">Tiada pasukan ditemui berdasarkan tapisan semasa.</td></tr>`;
+                    return;
+                }
+
+                filtered.forEach((item, index) => {
+                    const sekolah = item.karnival_guru.karnival_sekolah;
+                    
+                    const btnTonton = item.pautan_hasil 
+                        ? `<button onclick="juriApp.tontonVideoPautan('${item.pautan_hasil}')" class="text-red-600 hover:bg-red-50 bg-white px-2 py-1.5 rounded text-xs font-bold border border-red-200 transition flex items-center justify-center gap-1 mx-auto shadow-sm">▶️ Main Video</button>` 
+                        : `<span class="bg-gray-100 text-gray-500 px-2 py-1 rounded text-xs font-semibold inline-block border">Belum Dihantar</span>`;
+
+                    let statusBadge = '';
+                    let btnTindakan = '';
+
+                    if (item.isDinilaiOlehSistem) {
+                        const m = item.markah_juri_ini;
+                        const total = m.markah_tema + m.markah_visual + m.markah_kreativiti + m.markah_audio;
+                        statusBadge = `
+                            <div class="bg-green-100 text-green-800 text-xs font-bold px-2 py-1 rounded-md mb-1 inline-block border border-green-300">
+                                Selesai (${total}/100)
+                            </div>
+                        `;
+                        btnTindakan = `<button onclick="juriApp.bukaPenilaian('${item.id}')" class="bg-yellow-500 hover:bg-yellow-600 text-white text-xs font-bold px-3 py-1.5 rounded w-full shadow-sm transition">✏️ Kemaskini Markah</button>`;
+                    } else {
+                        statusBadge = `<span class="bg-gray-100 text-gray-600 text-xs font-bold px-2 py-1 rounded-md mb-1 inline-block border border-gray-300">Menunggu Penilaian</span>`;
+                        btnTindakan = `<button onclick="juriApp.bukaPenilaian('${item.id}')" class="bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold px-3 py-1.5 rounded w-full shadow-sm transition">📝 Nilai Sekarang</button>`;
+                    }
+
+                    const tr = document.createElement('tr');
+                    tr.className = "border-b border-gray-200 hover:bg-green-50/50 transition";
+                    tr.innerHTML = `
+                        <td class="py-3 px-3 text-center font-bold text-gray-500">${index + 1}</td>
+                        <td class="py-3 px-3 align-middle">
+                            <div class="font-bold text-gray-800 text-sm">${sekolah.nama}</div>
+                        </td>
+                        <td class="py-3 px-3 align-middle">
+                            <div class="font-black text-green-700 text-base">${item.nama_pasukan}</div>
+                        </td>
+                        <td class="py-3 px-3 align-middle">
+                            <div class="text-xs font-semibold text-gray-700">${item.karnival_guru.kategori_pertandingan}</div>
+                        </td>
+                        <td class="py-3 px-3 text-center align-middle w-28">
+                            ${btnTonton}
+                        </td>
+                        <td class="py-3 px-3 text-center align-middle w-32">
+                            ${statusBadge}
+                        </td>
+                        <td class="py-3 px-3 text-center align-middle w-36">
+                            ${btnTindakan}
+                        </td>
+                    `;
+                    tbody.appendChild(tr);
+                });
+            },
+
+            bukaPenilaian: (pasukan_id) => {
+                const pasukan = juriApp.dataPasukan.find(p => p.id === pasukan_id);
+                if (!pasukan) return;
+
+                juriApp.currentPasukanId = pasukan_id;
+                juriApp.currentVideoUrl = pasukan.pautan_hasil;
+                
+                // Populate Headers
+                document.getElementById('penilaian_pasukan_nama').textContent = pasukan.nama_pasukan;
+                document.getElementById('penilaian_sekolah_nama').textContent = pasukan.karnival_guru.karnival_sekolah.nama;
+                document.getElementById('paparan_borang_nama_juri').textContent = juriApp.juriName;
+                
+                // Video Button Logic
+                const btnVideo = document.getElementById('btn_tonton_video');
+                const teksTiadaVideo = document.getElementById('teks_tiada_video');
+                
+                if (pasukan.pautan_hasil) {
+                    btnVideo.classList.remove('hidden');
+                    teksTiadaVideo.classList.add('hidden');
+                } else {
+                    btnVideo.classList.add('hidden');
+                    teksTiadaVideo.classList.remove('hidden');
+                }
+                
+                // Reset Form state
+                document.getElementById('form_penilaian').reset();
+                document.getElementById('paparan_jumlah_markah').textContent = '0';
+                document.getElementById('rekod_penilaian_id').value = '';
+
+                // Restore previous scores if exist
+                if (pasukan.isDinilaiOlehSistem && pasukan.markah_juri_ini) {
+                    const m = pasukan.markah_juri_ini;
+                    document.getElementById('rekod_penilaian_id').value = m.id;
+                    document.getElementById('markah_tema').value = m.markah_tema;
+                    document.getElementById('markah_visual').value = m.markah_visual;
+                    document.getElementById('markah_kreativiti').value = m.markah_kreativiti;
+                    document.getElementById('markah_audio').value = m.markah_audio;
+                    
+                    const total = m.markah_tema + m.markah_visual + m.markah_kreativiti + m.markah_audio;
+                    document.getElementById('paparan_jumlah_markah').textContent = total;
+                }
+
+                // Switch Views
+                document.getElementById('view_dashboard').classList.add('hidden');
+                document.getElementById('view_penilaian').classList.remove('hidden');
+            },
+
+            tutupPenilaian: () => {
+                juriApp.currentPasukanId = null;
+                juriApp.currentVideoUrl = null;
+                document.getElementById('view_penilaian').classList.add('hidden');
+                document.getElementById('view_dashboard').classList.remove('hidden');
+                
+                // Refresh to show updated states
+                juriApp.loadSenaraiPasukan();
+            },
+
+            simpanPenilaian: async (e) => {
+                e.preventDefault();
+                
+                const rekodId = document.getElementById('rekod_penilaian_id').value;
+                const tema = parseInt(document.getElementById('markah_tema').value) || 0;
+                const visual = parseInt(document.getElementById('markah_visual').value) || 0;
+                const kreativiti = parseInt(document.getElementById('markah_kreativiti').value) || 0;
+                const audio = parseInt(document.getElementById('markah_audio').value) || 0;
+
+                if (tema > 30 || visual > 30 || kreativiti > 20 || audio > 20) {
+                    Swal.fire('Ralat Markah', 'Pastikan markah tidak melebihi wajaran yang ditetapkan bagi setiap kriteria.', 'error');
+                    return;
+                }
+
+                document.getElementById('loading_overlay').classList.remove('hidden');
+                
+                try {
+                    let result;
+                    
+                    if (rekodId !== '') {
+                        // UPDATE rekod sedia ada
+                        result = await supabaseClientJuri
+                            .from('karnival_penilaian')
+                            .update({
+                                markah_tema: tema,
+                                markah_visual: visual,
+                                markah_kreativiti: kreativiti,
+                                markah_audio: audio
+                            })
+                            .eq('id', rekodId);
+                    } else {
+                        // INSERT rekod baru
+                        result = await supabaseClientJuri
+                            .from('karnival_penilaian')
+                            .insert([{
+                                pasukan_id: juriApp.currentPasukanId,
+                                nama_juri: juriApp.juriName,
+                                markah_tema: tema,
+                                markah_visual: visual,
+                                markah_kreativiti: kreativiti,
+                                markah_audio: audio
+                            }]);
+                    }
+
+                    if (result.error) throw result.error;
+                    
+                    Swal.fire({
+                        title: 'Berjaya!',
+                        text: 'Markah penilaian anda telah disimpan dan direkodkan ke dalam sistem.',
+                        icon: 'success',
+                        confirmButtonText: 'Kembali Ke Senarai',
+                        confirmButtonColor: '#16a34a'
+                    }).then(() => {
+                        juriApp.tutupPenilaian();
+                    });
+
+                } catch (error) {
+                    console.error("Ralat simpanPenilaian:", error);
+                    Swal.fire('Ralat', 'Gagal menyimpan rekod pemarkahan. Sila cuba lagi.', 'error');
+                } finally {
+                    document.getElementById('loading_overlay').classList.add('hidden');
+                }
+            },
+
+            // Universal Video Viewer
+            tontonVideoSemasa: () => {
+                juriApp.tontonVideoPautan(juriApp.currentVideoUrl);
+            },
+
+            tontonVideoPautan: (url) => {
+                if (!url) return;
+
+                let embedUrl = url;
+                
+                if (url.includes('youtube.com') || url.includes('youtu.be')) {
+                    const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
+                    const match = url.match(regExp);
+                    if (match && match[2].length === 11) {
+                        embedUrl = 'https://www.youtube.com/embed/' + match[2];
+                    } else {
+                        Swal.fire('Ralat Pautan', 'Format pautan YouTube tidak disokong atau tidak sah.', 'error');
+                        return;
+                    }
+                } else if (url.includes('drive.google.com')) {
+                    embedUrl = url.replace(/\/view.*$/, '/preview');
+                }
+
+                Swal.fire({
+                    title: 'Video Hasil Pasukan',
+                    html: `<div style="position: relative; padding-bottom: 56.25%; height: 0; overflow: hidden; max-width: 100%; border-radius: 8px; border: 1px solid #e5e7eb; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);">
+                              <iframe src="${embedUrl}" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%;" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+                           </div>`,
+                    width: '800px',
+                    showCloseButton: true,
+                    showConfirmButton: false,
+                    customClass: {
+                        popup: 'rounded-xl'
+                    }
+                });
+            }
+        };
+
+        // Initialize App on DOM Load
+        document.addEventListener('DOMContentLoaded', juriApp.init);
+    </script>
+</body>
+</html>
