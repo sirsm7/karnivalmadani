@@ -4,17 +4,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Pertandingan Video AI Kemerdekaan 2026</title>
-    <!-- Favicon -->
     <link rel="icon" type="image/png" href="LogoPPDAG.png">
-    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- jsPDF untuk Sijil -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-    <!-- SweetAlert2 -->
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-    <!-- Supabase JS -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    
     <style>
         .hidden { display: none !important; }
         input, select { text-transform: uppercase; }
@@ -27,22 +21,31 @@
     </style>
 </head>
 <body class="bg-gray-100 min-h-screen font-sans text-gray-800">
-
     <div class="max-w-4xl mx-auto px-4 py-8">
-        
-        <!-- Header -->
-        <header class="bg-white shadow-md rounded-lg p-6 mb-8 text-center">
+        <header class="bg-white shadow-md rounded-lg p-6 mb-8 text-center relative">
+            <div id="banner_countdown" class="bg-gradient-to-r from-red-600 to-orange-500 text-white p-3 rounded-lg mb-6 shadow-sm border border-red-700">
+                <div id="teks_masa_tamat" class="hidden text-xl font-black uppercase tracking-wider py-2">PENYERTAAN TELAH DITUTUP</div>
+                <div id="kontena_pemasa">
+                    <p class="text-sm font-bold mb-1 opacity-90 uppercase tracking-wide">Tarikh Tutup Penyertaan & Penghantaran</p>
+                    <div class="flex justify-center items-center gap-2 md:gap-4 text-center">
+                        <div class="bg-white/20 rounded px-2 md:px-3 py-1 min-w-[60px]"><span id="cd_hari" class="block text-2xl md:text-3xl font-black">00</span><span class="text-[10px] md:text-xs font-semibold">HARI</span></div>
+                        <span class="text-2xl font-bold opacity-70">:</span>
+                        <div class="bg-white/20 rounded px-2 md:px-3 py-1 min-w-[60px]"><span id="cd_jam" class="block text-2xl md:text-3xl font-black">00</span><span class="text-[10px] md:text-xs font-semibold">JAM</span></div>
+                        <span class="text-2xl font-bold opacity-70">:</span>
+                        <div class="bg-white/20 rounded px-2 md:px-3 py-1 min-w-[60px]"><span id="cd_minit" class="block text-2xl md:text-3xl font-black">00</span><span class="text-[10px] md:text-xs font-semibold">MINIT</span></div>
+                        <span class="text-2xl font-bold opacity-70">:</span>
+                        <div class="bg-white/20 rounded px-2 md:px-3 py-1 min-w-[60px]"><span id="cd_saat" class="block text-2xl md:text-3xl font-black">00</span><span class="text-[10px] md:text-xs font-semibold">SAAT</span></div>
+                    </div>
+                    <p class="text-[10px] mt-1.5 opacity-80 font-medium">9 September 2026, 9:00 Pagi</p>
+                </div>
+            </div>
+
             <img src="LogoPPDAG.png" alt="Logo Karnival" class="mx-auto h-24 mb-4 object-contain">
             <h1 class="text-2xl font-bold text-blue-800">SISTEM PENDAFTARAN PERTANDINGAN VIDEO AI KEMERDEKAAN 2026</h1>
             <p class="text-gray-600 font-semibold mt-2">Karnival Pendidikan Madani PPD Alor Gajah</p>
         </header>
-
-        <!-- Container Utama untuk Paparan Berbeza -->
         <main id="app_container" class="bg-white shadow-md rounded-lg p-6">
-            
-            <!-- PAPARAN 1: Pilih Sekolah -->
             <section id="view_pilih_sekolah">
-                <!-- Statistik Pendaftaran -->
 				<div class="grid grid-cols-2 gap-4 mb-8">
 					<div onclick="app.paparSenaraiSekolahStat()" class="bg-blue-50 border border-blue-200 rounded-lg p-4 text-center shadow-sm cursor-pointer hover:bg-blue-100 hover:shadow-md transition">
 						<h3 class="text-sm font-bold text-blue-800 mb-1">JUMLAH SEKOLAH</h3>
@@ -55,37 +58,25 @@
 						<p class="text-xs text-gray-500 mt-1">Telah Didaftarkan (Klik)</p>
 					</div>
 				</div>
-
                 <h2 class="text-xl font-bold border-b pb-2 mb-4">Langkah 1: Pilih Sekolah</h2>
                 <div class="mb-4 relative">
                     <label class="block text-gray-700 font-bold mb-2">Cari dan Pilih Sekolah Anda:</label>
                     <input type="text" id="carian_sekolah" autocomplete="off" placeholder="Taip nama atau kod sekolah di sini..." class="w-full px-3 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white shadow-sm">
-                    
-                    <!-- Custom Dropdown List -->
                     <ul id="dropdown_sekolah" class="hidden absolute z-10 w-full mt-1 bg-white border rounded-lg shadow-lg max-h-60 overflow-y-auto">
-                        <!-- Senarai `li` akan diisi oleh JS -->
                     </ul>
                 </div>
                 <button id="btn_seterusnya_sekolah" class="w-full bg-blue-600 text-white font-bold py-2 px-4 rounded hover:bg-blue-700 transition">Seterusnya</button>
             </section>
-
-            <!-- PAPARAN 2: Borang Daftar Guru & Log Masuk (Terus ke sini selepas pilih sekolah) -->
             <section id="view_daftar_guru" class="hidden">
                 <button id="btn_back_to_sekolah_dari_guru" class="text-blue-600 mb-4 hover:underline text-sm">&larr; Kembali tukar sekolah</button>
                 <h2 class="text-xl font-bold border-b pb-2 mb-4 text-indigo-700" id="tajuk_borang_guru">Langkah 2: Maklumat Guru Pembimbing</h2>
-                
-                <!-- Kontena Senarai Guru Sedia Ada (Kad Profil) -->
                 <div id="container_kad_guru" class="mb-6">
-                    <!-- Senarai kad guru akan di-render di sini oleh JS -->
                 </div>
-
                 <div class="flex items-center my-6">
                     <div class="flex-grow border-t border-gray-300"></div>
                     <span class="flex-shrink-0 mx-4 text-gray-400 text-sm font-bold">ATAU DAFTAR BARU SEBAGAI GURU PEMBIMBING</span>
                     <div class="flex-grow border-t border-gray-300"></div>
                 </div>
-
-                <!-- Borang Pendaftaran Guru Baru -->
                 <form id="form_guru" onsubmit="app.simpanGuru(event)" class="bg-white p-4 rounded-lg border shadow-sm">
                     <div class="mb-4">
                         <label class="block text-gray-700 font-bold mb-2">Nama Guru Pembimbing:</label>
@@ -108,20 +99,16 @@
                     <div class="mb-6">
                         <label class="block text-gray-700 font-bold mb-2">Kategori Pertandingan:</label>
                         <select id="guru_kategori" required class="w-full px-3 py-2 border rounded-lg bg-gray-50 focus:bg-white">
-                            <!-- Kategori akan di-populate berdasarkan pertandingan -->
                         </select>
                     </div>
                     <button type="submit" id="btn_simpan_guru" class="w-full bg-indigo-600 text-white font-bold py-3 px-4 rounded-lg hover:bg-indigo-700 transition shadow-md">Daftar Sebagai Guru Baru</button>
                 </form>
             </section>
-
-            <!-- PAPARAN 3: Dashboard Guru (Senarai Pasukan) -->
             <section id="view_dashboard_guru" class="hidden">
                 <div class="flex justify-between items-center border-b pb-2 mb-4">
                     <h2 class="text-xl font-bold text-gray-800">Dashboard Pengurusan Pasukan</h2>
                     <button onclick="app.logoutGuru()" class="text-red-500 text-sm hover:underline font-bold bg-red-50 px-2 py-1 rounded">Keluar</button>
                 </div>
-                
                 <div class="bg-indigo-50 p-4 rounded-lg mb-6 border border-indigo-100 flex flex-col md:flex-row md:justify-between md:items-center gap-4">
                     <div>
                         <p class="text-sm"><strong>Guru:</strong> <span id="dash_guru_nama" class="font-bold"></span></p>
@@ -134,7 +121,6 @@
                         </button>
                     </div>
                 </div>
-
                 <div class="flex flex-wrap gap-2 mb-6">
                     <button onclick="app.bukaBorangPasukan()" id="btn_tambah_pasukan" class="bg-blue-600 text-white font-bold py-2 px-4 rounded hover:bg-blue-700 text-sm shadow">
                         + Daftar Pasukan Baru (<span id="count_pasukan">0</span>/10)
@@ -146,26 +132,19 @@
                         &#9654; Tonton Taklimat YouTube
                     </a>
                 </div>
-
                 <h3 class="font-bold text-lg mb-2 border-b pb-1">Senarai Pasukan Berdaftar:</h3>
                 <div id="senarai_pasukan_container" class="space-y-4">
-                    <!-- Senarai pasukan akan di-render di sini -->
                 </div>
             </section>
-
-            <!-- PAPARAN 4: Borang Daftar Pasukan -->
             <section id="view_daftar_pasukan" class="hidden">
                 <button onclick="app.tutupBorangPasukan()" class="text-gray-600 mb-4 hover:underline text-sm bg-gray-100 px-3 py-1 rounded">&larr; Batal & Kembali ke Dashboard</button>
                 <h2 class="text-xl font-bold border-b pb-2 mb-4 text-green-700">Borang Pendaftaran Pasukan Baru</h2>
-                
                 <form id="form_pasukan" onsubmit="app.simpanPasukan(event)">
                     <div class="mb-4">
                         <label class="block text-gray-700 font-bold mb-2">Nama Pasukan:</label>
                         <input type="text" id="pasukan_nama" required placeholder="Cth: ALPHA 01" class="w-full px-3 py-2 border rounded-lg" style="text-transform: none;">
                         <p class="text-xs text-gray-500 mt-1">Boleh guna campuran huruf besar, kecil, nombor dan simbol.</p>
                     </div>
-
-                    <!-- Maklumat Murid 1 -->
                     <div class="bg-blue-50 p-4 rounded-lg border border-blue-200 mb-4 shadow-sm">
                         <h3 class="font-bold mb-2 border-b border-blue-200 pb-1 text-blue-800">Maklumat Murid 1 (Ketua)</h3>
                         <div class="mb-2">
@@ -183,8 +162,6 @@
                             </div>
                         </div>
                     </div>
-
-                    <!-- Maklumat Murid 2 -->
                     <div class="bg-blue-50 p-4 rounded-lg border border-blue-200 mb-6 shadow-sm">
                         <h3 class="font-bold mb-2 border-b border-blue-200 pb-1 text-blue-800">Maklumat Murid 2</h3>
                         <div class="mb-2">
@@ -202,26 +179,19 @@
                             </div>
                         </div>
                     </div>
-
                     <button type="submit" id="btn_simpan_pasukan" class="w-full bg-green-600 text-white font-bold py-3 px-4 rounded-lg hover:bg-green-700 transition shadow">Daftar Pasukan Ini</button>
                 </form>
             </section>
-
-            <!-- PAPARAN 5: Borang Kemaskini Pasukan -->
             <section id="view_kemaskini_pasukan" class="hidden">
                 <button onclick="app.tutupBorangKemaskini()" class="text-gray-600 mb-4 hover:underline text-sm bg-gray-100 px-3 py-1 rounded">&larr; Batal & Kembali ke Dashboard</button>
                 <h2 class="text-xl font-bold border-b pb-2 mb-4 text-yellow-700">Kemaskini Maklumat Pasukan</h2>
-                
                 <form id="form_kemaskini_pasukan" onsubmit="app.simpanKemaskiniPasukan(event)">
                     <input type="hidden" id="edit_pasukan_id">
-                    
                     <div class="mb-4">
                         <label class="block text-gray-700 font-bold mb-2">Nama Pasukan:</label>
                         <input type="text" id="edit_pasukan_nama" required class="w-full px-3 py-2 border rounded-lg" style="text-transform: none;">
                         <p class="text-xs text-gray-500 mt-1">Boleh guna campuran huruf besar, kecil, nombor dan simbol.</p>
                     </div>
-
-                    <!-- Maklumat Murid 1 -->
                     <div class="bg-blue-50 p-4 rounded-lg border border-blue-200 mb-4 shadow-sm">
                         <h3 class="font-bold mb-2 border-b border-blue-200 pb-1 text-blue-800">Maklumat Murid 1 (Ketua)</h3>
                         <div class="mb-2">
@@ -239,8 +209,6 @@
                             </div>
                         </div>
                     </div>
-
-                    <!-- Maklumat Murid 2 -->
                     <div class="bg-blue-50 p-4 rounded-lg border border-blue-200 mb-6 shadow-sm">
                         <h3 class="font-bold mb-2 border-b border-blue-200 pb-1 text-blue-800">Maklumat Murid 2</h3>
                         <div class="mb-2">
@@ -258,13 +226,10 @@
                             </div>
                         </div>
                     </div>
-
                     <button type="submit" class="w-full bg-yellow-500 text-white font-bold py-3 px-4 rounded-lg hover:bg-yellow-600 transition shadow">Simpan Kemaskini</button>
                 </form>
             </section>
-
         </main>
-        
         <footer class="mt-8 text-center text-sm text-gray-500">
             <p>&copy; 2026 PPD Alor Gajah. Hak Cipta Terpelihara.</p>
             <p class="mt-2 space-x-4">
@@ -273,28 +238,21 @@
                 <a href="juri.html" class="text-blue-500 hover:underline font-semibold">Penilaian Juri</a>
             </p>
         </footer>
-
     </div>
-
-    <!-- Loading Overlay -->
     <div id="loading_overlay" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden flex items-center justify-center">
         <div class="bg-white p-6 rounded-lg shadow-lg text-center">
             <div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600 mb-4"></div>
             <p id="loading_text" class="font-bold text-gray-800">Memproses...</p>
         </div>
     </div>
-
-    <!-- Application Scripts -->
     <script>
         // Constants from system
         const SUPABASE_URL = "https://app.tech4ag.my";
         const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYW5vbiIsImlzcyI6InN1cGFiYXNlIiwiaWF0IjoxNzYzMzczNjQ1LCJleHAiOjIwNzg3MzM2NDV9.vZOedqJzUn01PjwfaQp7VvRzSm4aRMr21QblPDK8AoY";
-        
         // Pautan YouTube
         const YOUTUBE_ANIMASI = "https://youtube.com/live/9nYyPLaQ9Pc";
     </script>
     <script src="supabase.data.js"></script>
     <script src="app.js"></script>
-
 </body>
 </html>
