@@ -139,9 +139,9 @@
 
                 <div class="grid lg:grid-cols-2 gap-6">
                     <!-- Lajur Kiri: Video Embed -->
-                    <div class="bg-gray-800 rounded-lg p-2 flex flex-col">
+                    <div class="bg-gray-800 rounded-lg p-2 flex flex-col h-fit">
                         <h3 class="font-bold text-white mb-2 px-2 border-b border-gray-600 pb-2">▶️ Paparan Video Hasil</h3>
-                        <div id="container_video" class="relative w-full rounded overflow-hidden flex-grow min-h-[300px] lg:min-h-0 bg-black flex items-center justify-center">
+                        <div id="container_video" class="relative w-full aspect-video bg-black rounded overflow-hidden flex items-center justify-center shadow-inner">
                             <!-- iFrame akan diisi melalui JS -->
                             <iframe id="iframe_video" class="absolute top-0 left-0 w-full h-full hidden" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
                             <p id="teks_tiada_video" class="text-gray-400 font-bold text-center p-4">Peserta belum menghantar pautan video.</p>
