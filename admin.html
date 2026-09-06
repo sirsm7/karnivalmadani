@@ -214,10 +214,12 @@
                         </div>
                     </div>
 
-                    <!-- Borang Tambah Pemarkahan -->
+                    <!-- Borang Tambah / Kemaskini Pemarkahan -->
                     <div class="bg-white border rounded-lg p-4 shadow-sm h-fit">
-                        <h3 class="font-bold text-lg mb-3 border-b pb-2">Tambah Juri & Rekod Markah</h3>
+                        <h3 class="font-bold text-lg mb-3 border-b pb-2">Borang Rekod Markah</h3>
                         <form id="form_penilaian" onsubmit="adminApp.simpanPenilaian(event)">
+                            <input type="hidden" id="rekod_penilaian_id">
+                            
                             <div class="mb-3">
                                 <label class="block text-sm font-bold mb-1">Nama Juri:</label>
                                 <input type="text" id="penilaian_nama_juri" list="senarai_juri_sedia_ada" required class="w-full px-2 py-1 border rounded" placeholder="Cth: Ahmad Albab">
@@ -248,7 +250,11 @@
                                 <span class="text-sm font-bold">Jumlah Markah: </span>
                                 <span class="text-xl font-black text-indigo-700" id="paparan_jumlah_markah">0</span><span class="text-sm font-bold text-gray-500"> / 100</span>
                             </div>
-                            <button type="submit" class="w-full bg-indigo-600 text-white font-bold py-2 px-4 rounded hover:bg-indigo-700 transition">Simpan Markah</button>
+                            
+                            <div class="flex gap-2">
+                                <button type="submit" id="btn_simpan_markah" class="w-full bg-indigo-600 text-white font-bold py-2 px-4 rounded hover:bg-indigo-700 transition">Simpan Markah</button>
+                                <button type="button" id="btn_batal_edit_markah" onclick="adminApp.batalEditPenilaian()" class="hidden w-1/3 bg-gray-500 text-white font-bold py-2 px-4 rounded hover:bg-gray-600 transition">Batal</button>
+                            </div>
                         </form>
                     </div>
                 </div>
@@ -351,6 +357,7 @@
             dataPasukan: [],
             dataGuruPenuh: [],
             dataPenilaian: [],
+            currentPenilaianData: [],
             currentPasukanId: null,
             currentVideoUrl: null,
 
@@ -373,6 +380,7 @@
                 adminApp.dataPasukan = [];
                 adminApp.dataGuruPenuh = [];
                 adminApp.dataPenilaian = [];
+                adminApp.currentPenilaianData = [];
             },
 
             togolPaparan: (jenis) => {
@@ -832,17 +840,7 @@
                     btnVideo.classList.add('hidden');
                 }
                 
-                // Reset form
-                document.getElementById('form_penilaian').reset();
-                document.getElementById('paparan_jumlah_markah').textContent = '0';
-
-                // Isi automatik nama juri dari localStorage jika ada
-                const juriTerakhir = localStorage.getItem('karnival_last_juri');
-                if (juriTerakhir) {
-                    document.getElementById('penilaian_nama_juri').value = juriTerakhir;
-                }
-
-                // Muatkan data dropdown juri
+                adminApp.batalEditPenilaian(); // Reset form and mode
                 adminApp.loadSenaraiJuriDropdown();
 
                 document.getElementById('view_dashboard').classList.add('hidden');
@@ -852,13 +850,13 @@
             },
 
             tontonVideoSemasa: () => {
-                // Gunakan fungsi universal
                 adminApp.tontonVideoPautan(adminApp.currentVideoUrl);
             },
 
             tutupPenilaian: () => {
                 adminApp.currentPasukanId = null;
                 adminApp.currentVideoUrl = null;
+                adminApp.currentPenilaianData = [];
                 document.getElementById('view_penilaian').classList.add('hidden');
                 document.getElementById('view_dashboard').classList.remove('hidden');
                 // Auto refresh the list and ranking to reflect new scores
@@ -877,6 +875,8 @@
                         .order('created_at', { ascending: true });
 
                     if (error) throw error;
+                    
+                    adminApp.currentPenilaianData = data;
                     
                     const tbody = document.getElementById('table_body_penilaian');
                     tbody.innerHTML = '';
@@ -900,8 +900,9 @@
                                 <td class="py-2 px-3 text-center text-orange-700 font-semibold">${item.markah_kreativiti}</td>
                                 <td class="py-2 px-3 text-center text-purple-700 font-semibold">${item.markah_audio}</td>
                                 <td class="py-2 px-3 text-center font-bold text-lg text-indigo-800">${total}</td>
-                                <td class="py-2 px-3 text-center">
-                                    <button onclick="adminApp.padamPenilaian('${item.id}')" class="text-red-500 hover:text-red-700 font-bold px-2 py-1">🗑️</button>
+                                <td class="py-2 px-3 text-center whitespace-nowrap">
+                                    <button onclick="adminApp.editPenilaian('${item.id}')" class="text-yellow-600 hover:text-yellow-800 font-bold px-1 py-1" title="Kemaskini Markah">✏️</button>
+                                    <button onclick="adminApp.padamPenilaian('${item.id}')" class="text-red-500 hover:text-red-700 font-bold px-1 py-1" title="Padam Markah">🗑️</button>
                                 </td>
                             `;
                             tbody.appendChild(tr);
@@ -918,10 +919,54 @@
                 }
             },
 
+            editPenilaian: (id) => {
+                const markah = adminApp.currentPenilaianData.find(m => m.id === id);
+                if (!markah) return;
+
+                document.getElementById('rekod_penilaian_id').value = markah.id;
+                document.getElementById('penilaian_nama_juri').value = markah.nama_juri;
+                document.getElementById('markah_tema').value = markah.markah_tema;
+                document.getElementById('markah_visual').value = markah.markah_visual;
+                document.getElementById('markah_kreativiti').value = markah.markah_kreativiti;
+                document.getElementById('markah_audio').value = markah.markah_audio;
+
+                // Kira semula total paparan
+                const total = markah.markah_tema + markah.markah_visual + markah.markah_kreativiti + markah.markah_audio;
+                document.getElementById('paparan_jumlah_markah').textContent = total;
+
+                // Ubah Butang ke Mod Kemaskini
+                const btnSimpan = document.getElementById('btn_simpan_markah');
+                btnSimpan.textContent = "Kemaskini Markah";
+                btnSimpan.classList.replace('bg-indigo-600', 'bg-yellow-500');
+                btnSimpan.classList.replace('hover:bg-indigo-700', 'hover:bg-yellow-600');
+                
+                document.getElementById('btn_batal_edit_markah').classList.remove('hidden');
+            },
+
+            batalEditPenilaian: () => {
+                document.getElementById('form_penilaian').reset();
+                document.getElementById('rekod_penilaian_id').value = '';
+                document.getElementById('paparan_jumlah_markah').textContent = '0';
+
+                // Isi automatik nama juri dari localStorage jika ada
+                const juriTerakhir = localStorage.getItem('karnival_last_juri');
+                if (juriTerakhir) {
+                    document.getElementById('penilaian_nama_juri').value = juriTerakhir;
+                }
+
+                // Ubah Butang ke Mod Asal (Tambah)
+                const btnSimpan = document.getElementById('btn_simpan_markah');
+                btnSimpan.textContent = "Simpan Markah";
+                btnSimpan.classList.replace('bg-yellow-500', 'bg-indigo-600');
+                btnSimpan.classList.replace('hover:bg-yellow-600', 'hover:bg-indigo-700');
+                
+                document.getElementById('btn_batal_edit_markah').classList.add('hidden');
+            },
+
             simpanPenilaian: async (e) => {
                 e.preventDefault();
                 
-                // Dapatkan nama juri dan tukar ke format Title Case
+                const rekod_id = document.getElementById('rekod_penilaian_id').value;
                 const inputJuriRaw = document.getElementById('penilaian_nama_juri').value.trim();
                 const juri = adminApp.toTitleCase(inputJuriRaw);
                 
@@ -938,33 +983,47 @@
                 document.getElementById('loading_overlay').classList.remove('hidden');
                 
                 try {
-                    const { error } = await supabaseClientAdmin
-                        .from('karnival_penilaian')
-                        .insert([{
-                            pasukan_id: adminApp.currentPasukanId,
-                            nama_juri: juri,
-                            markah_tema: tema,
-                            markah_visual: visual,
-                            markah_kreativiti: kreativiti,
-                            markah_audio: audio
-                        }]);
+                    if (rekod_id !== '') {
+                        // UPDATE Operation
+                        const { error } = await supabaseClientAdmin
+                            .from('karnival_penilaian')
+                            .update({
+                                nama_juri: juri,
+                                markah_tema: tema,
+                                markah_visual: visual,
+                                markah_kreativiti: kreativiti,
+                                markah_audio: audio
+                            })
+                            .eq('id', rekod_id);
 
-                    if (error) throw error;
+                        if (error) throw error;
+                        Swal.fire({ toast: true, position: 'top-end', icon: 'success', title: 'Markah berjaya dikemaskini', showConfirmButton: false, timer: 2000 });
+                    } else {
+                        // INSERT Operation
+                        const { error } = await supabaseClientAdmin
+                            .from('karnival_penilaian')
+                            .insert([{
+                                pasukan_id: adminApp.currentPasukanId,
+                                nama_juri: juri,
+                                markah_tema: tema,
+                                markah_visual: visual,
+                                markah_kreativiti: kreativiti,
+                                markah_audio: audio
+                            }]);
+
+                        if (error) throw error;
+                        Swal.fire({ toast: true, position: 'top-end', icon: 'success', title: 'Markah baharu disimpan', showConfirmButton: false, timer: 2000 });
+                    }
                     
                     // Simpan nama juri ke dalam localStorage sebagai memori cache pelayar
                     localStorage.setItem('karnival_last_juri', juri);
                     
-                    document.getElementById('form_penilaian').reset();
-                    document.getElementById('paparan_jumlah_markah').textContent = '0';
-                    document.getElementById('penilaian_nama_juri').value = juri; // Auto-isi semula untuk penilaian pasukan semasa
-                    
-                    Swal.fire({ toast: true, position: 'top-end', icon: 'success', title: 'Markah disimpan', showConfirmButton: false, timer: 2000 });
-                    
+                    adminApp.batalEditPenilaian(); // Reset form and mode
                     adminApp.loadSenaraiJuriDropdown(); // Segarkan semula senarai dropdown
                     adminApp.loadPenilaian();
                 } catch (error) {
                     console.error("Ralat simpanPenilaian:", error);
-                    Swal.fire('Ralat', 'Gagal menyimpan rekod pemarkahan.', 'error');
+                    Swal.fire('Ralat', 'Gagal memproses rekod pemarkahan.', 'error');
                 } finally {
                     document.getElementById('loading_overlay').classList.add('hidden');
                 }
@@ -989,6 +1048,8 @@
                             .eq('id', penilaian_id);
 
                         if (error) throw error;
+                        
+                        adminApp.batalEditPenilaian(); // Reset in case they were editing the deleted record
                         adminApp.loadPenilaian();
                         adminApp.loadSenaraiJuriDropdown(); // Segarkan semula senarai dropdown jika juri tiada rekod lain
                     } catch (error) {

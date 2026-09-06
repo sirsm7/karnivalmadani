@@ -202,7 +202,7 @@
                         </div>
 
                         <div class="mt-8">
-                            <button type="submit" class="w-full bg-green-600 text-white font-black py-4 px-4 rounded-lg hover:bg-green-700 transition shadow-lg text-lg">💾 Simpan & Hantar Markah</button>
+                            <button type="submit" id="btn_simpan_juri" class="w-full bg-green-600 text-white font-black py-4 px-4 rounded-lg hover:bg-green-700 transition shadow-lg text-lg">💾 Simpan & Hantar Markah</button>
                         </div>
                     </form>
                 </div>
@@ -476,6 +476,8 @@
                 document.getElementById('form_penilaian').reset();
                 document.getElementById('paparan_jumlah_markah').textContent = '0';
                 document.getElementById('rekod_penilaian_id').value = '';
+                
+                const btnSimpan = document.getElementById('btn_simpan_juri');
 
                 // Restore previous scores if exist
                 if (pasukan.isDinilaiOlehSistem && pasukan.markah_juri_ini) {
@@ -488,6 +490,16 @@
                     
                     const total = m.markah_tema + m.markah_visual + m.markah_kreativiti + m.markah_audio;
                     document.getElementById('paparan_jumlah_markah').textContent = total;
+                    
+                    // Tukar warna dan teks kepada status Kemaskini
+                    btnSimpan.textContent = "✏️ Kemaskini Markah Penilaian";
+                    btnSimpan.classList.replace('bg-green-600', 'bg-yellow-500');
+                    btnSimpan.classList.replace('hover:bg-green-700', 'hover:bg-yellow-600');
+                } else {
+                    // Pastikan ia memaparkan status asalnya 
+                    btnSimpan.textContent = "💾 Simpan & Hantar Markah";
+                    btnSimpan.classList.replace('bg-yellow-500', 'bg-green-600');
+                    btnSimpan.classList.replace('hover:bg-yellow-600', 'hover:bg-green-700');
                 }
 
                 // Switch Views
