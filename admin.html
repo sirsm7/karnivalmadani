@@ -149,7 +149,7 @@
                     <div class="bg-yellow-50 border border-yellow-200 p-4 rounded-lg mb-6 flex flex-col md:flex-row justify-between items-center gap-4">
                         <div>
                             <h3 class="font-bold text-yellow-800 text-lg">Kedudukan Pasukan Mengikut Kategori</h3>
-                            <p class="text-sm text-yellow-700">Kedudukan ditentukan berdasarkan purata markah daripada semua juri yang menilai.</p>
+                            <p class="text-sm text-yellow-700">Kedudukan dinilai berpandukan purata markah keseluruhan, dan keutamaan diberikan kepada jumlah juri yang menilai.</p>
                         </div>
                         <div class="w-full md:w-1/3">
                             <label class="block text-sm font-bold mb-1 text-yellow-900">Papar Kategori:</label>
@@ -682,8 +682,14 @@
 
                 // 3. Render HTML bagi setiap kategori
                 for (const [kategori, senarai] of Object.entries(kumpulKategori)) {
-                    // Susun Markah Tinggi ke Rendah
-                    senarai.sort((a, b) => b.purataAkhir - a.purataAkhir);
+                    // Susun Markah Tinggi ke Rendah, kemudian diutamakan jumlah juri
+                    senarai.sort((a, b) => {
+                        // Keutamaan 1: Jumlah Juri
+                        if (a.bilJuri > b.bilJuri) return -1;
+                        if (a.bilJuri < b.bilJuri) return 1;
+                        // Keutamaan 2: Purata Markah (Jika jumlah juri sama)
+                        return b.purataAkhir - a.purataAkhir;
+                    });
 
                     const section = document.createElement('div');
                     section.className = "bg-white border shadow-sm rounded-lg overflow-hidden";
