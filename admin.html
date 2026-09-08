@@ -678,10 +678,11 @@
                     return;
                 }
 
-                let teks = `*SENARAI PASUKAN PENDIDIKAN MADANI 2026*\n`;
-                teks += `Kategori: ${fKategori}\n`;
-                teks += `Status: ${fStatus}\n`;
-                teks += `Jumlah: ${filtered.length} Pasukan\n\n`;
+                // Penggunaan format **teks** (Tebal) dan __teks__ (Condong) mengikut kehendak Telegram
+                let teks = `**SENARAI PASUKAN PENDIDIKAN MADANI 2026**\n`;
+                teks += `Kategori: **${fKategori}**\n`;
+                teks += `Status: **${fStatus}**\n`;
+                teks += `Jumlah: **${filtered.length} Pasukan**\n\n`;
 
                 filtered.forEach((item, index) => {
                     const guru = item.karnival_guru;
@@ -689,8 +690,8 @@
                     const statusSijil = item.disahkan ? '✅ Disahkan' : '⏳ Menunggu';
                     const statusVideo = item.pautan_hasil ? '🎥 Ada Video' : '❌ Tiada Video';
                     
-                    teks += `${index + 1}. *${sekolah.nama}* (${sekolah.kod})\n`;
-                    teks += `   Pasukan: ${item.nama_pasukan}\n`;
+                    teks += `${index + 1}. **${sekolah.nama}** (${sekolah.kod})\n`;
+                    teks += `   Pasukan: __${item.nama_pasukan}__\n`;
                     teks += `   Guru: ${guru.nama} (${guru.notel})\n`;
                     teks += `   Status: ${statusSijil} | ${statusVideo}\n`;
                     
@@ -706,7 +707,7 @@
                         toast: true, 
                         position: 'top-end', 
                         icon: 'success', 
-                        title: 'Teks format Telegram berjaya disalin ke clipboard!', 
+                        title: 'Teks berformat berjaya disalin ke clipboard!', 
                         showConfirmButton: false, 
                         timer: 3000 
                     });
