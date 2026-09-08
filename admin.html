@@ -57,15 +57,23 @@
                 <div class="flex flex-col md:flex-row justify-between items-start md:items-center border-b pb-4 mb-6 gap-4">
                     <h2 class="text-xl font-bold text-gray-800">Dashboard Pengurusan</h2>
                     
-                    <div class="flex flex-wrap items-center gap-2">
+                    <div class="flex flex-wrap items-center gap-3">
+                        <!-- Kawalan Manual Penghantaran Video -->
+                        <div class="flex items-center gap-2 bg-gray-50 px-3 py-1.5 rounded border border-gray-200">
+                            <span class="text-xs font-bold text-gray-700 uppercase tracking-wide">Fungsi Hantar Video:</span>
+                            <button id="btn_togol_video" onclick="adminApp.togolPenghantaranVideo()" class="bg-gray-400 text-white px-3 py-1 rounded text-xs font-bold transition shadow-sm">
+                                MEMUATKAN...
+                            </button>
+                        </div>
+                        
                         <!-- Navigation Toggle -->
-                        <div class="bg-gray-200 p-1 rounded-lg flex space-x-1 mr-4">
+                        <div class="bg-gray-200 p-1 rounded-lg flex space-x-1">
                             <button id="tab_senarai" onclick="adminApp.togolPaparan('senarai')" class="bg-white text-gray-800 shadow px-4 py-1.5 rounded-md text-sm font-bold transition">Senarai Penuh</button>
                             <button id="tab_ranking" onclick="adminApp.togolPaparan('ranking')" class="text-gray-600 hover:bg-gray-300 px-4 py-1.5 rounded-md text-sm font-bold transition">🏆 Paparan Ranking</button>
                         </div>
                         
-                        <button onclick="adminApp.loadSenarai()" class="text-blue-600 text-sm hover:underline font-bold bg-blue-50 px-3 py-1.5 rounded border border-blue-200">🔄 Segarkan</button>
-                        <button onclick="adminApp.logout()" class="text-red-500 text-sm hover:underline font-bold bg-red-50 px-3 py-1.5 rounded border border-red-200">Keluar</button>
+                        <button onclick="adminApp.loadSenarai()" class="text-blue-600 text-sm hover:underline font-bold bg-blue-50 px-3 py-1.5 rounded border border-blue-200 shadow-sm">🔄 Segarkan</button>
+                        <button onclick="adminApp.logout()" class="text-red-500 text-sm hover:underline font-bold bg-red-50 px-3 py-1.5 rounded border border-red-200 shadow-sm">Keluar</button>
                     </div>
                 </div>
 
@@ -367,6 +375,7 @@
             currentPenilaianData: [],
             currentPasukanId: null,
             currentVideoUrl: null,
+            videoSubmissionClosed: false, // State untuk kawalan video
 
             login: (e) => {
                 e.preventDefault();
@@ -374,7 +383,11 @@
                 if (pwd === 'ppdag@12345') {
                     document.getElementById('view_login').classList.add('hidden');
                     document.getElementById('view_dashboard').classList.remove('hidden');
-                    adminApp.loadSenarai();
+                    
+                    // Baca tetapan sistem terlebih dahulu sebelum muat senarai
+                    adminApp.fetchTetapanSistem().then(() => {
+                        adminApp.loadSenarai();
+                    });
                 } else {
                     Swal.fire('Ralat', 'Katalaluan Salah!', 'error');
                 }
@@ -388,6 +401,78 @@
                 adminApp.dataGuruPenuh = [];
                 adminApp.dataPenilaian = [];
                 adminApp.currentPenilaianData = [];
+                adminApp.videoSubmissionClosed = false;
+            },
+
+            fetchTetapanSistem: async () => {
+                try {
+                    const { data, error } = await supabaseClientAdmin
+                        .from('karnival_settings')
+                        .select('setting_value')
+                        .eq('setting_key', 'video_submission_closed')
+                        .maybeSingle();
+                    
+                    if (error) throw error;
+                    
+                    adminApp.videoSubmissionClosed = data ? data.setting_value : false;
+                    adminApp.updateTetapanUI();
+                } catch (err) {
+                    console.error("Gagal mengambil tetapan sistem", err);
+                }
+            },
+
+            updateTetapanUI: () => {
+                const btn = document.getElementById('btn_togol_video');
+                if (adminApp.videoSubmissionClosed) {
+                    btn.textContent = "DITUTUP (Klik utk Buka)";
+                    btn.className = "bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded text-xs font-bold transition shadow-sm cursor-pointer";
+                } else {
+                    btn.textContent = "DIBUKA (Klik utk Tutup)";
+                    btn.className = "bg-green-500 hover:bg-green-600 text-white px-3 py-1 rounded text-xs font-bold transition shadow-sm cursor-pointer";
+                }
+            },
+
+            togolPenghantaranVideo: async () => {
+                const statusBaru = !adminApp.videoSubmissionClosed;
+                const statusTeks = statusBaru ? "MENUTUP" : "MEMBUKA";
+                
+                const result = await Swal.fire({
+                    title: 'Anda Pasti?',
+                    html: `Adakah anda pasti mahu <b>${statusTeks}</b> kebenaran untuk menghantar/mengemaskini pautan video oleh peserta?`,
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonText: 'Ya, Teruskan',
+                    cancelButtonText: 'Batal',
+                    confirmButtonColor: statusBaru ? '#d33' : '#10b981'
+                });
+
+                if (result.isConfirmed) {
+                    document.getElementById('loading_overlay').classList.remove('hidden');
+                    try {
+                        const { error } = await supabaseClientAdmin
+                            .from('karnival_settings')
+                            .update({ setting_value: statusBaru, updated_at: new Date().toISOString() })
+                            .eq('setting_key', 'video_submission_closed');
+
+                        if (error) throw error;
+                        
+                        adminApp.videoSubmissionClosed = statusBaru;
+                        adminApp.updateTetapanUI();
+                        Swal.fire({
+                            toast: true,
+                            position: 'top-end',
+                            icon: 'success',
+                            title: `Penghantaran video telah ${statusBaru ? 'ditutup' : 'dibuka'}`,
+                            showConfirmButton: false,
+                            timer: 3000
+                        });
+                    } catch (err) {
+                        console.error("Gagal kemaskini tetapan", err);
+                        Swal.fire('Ralat', 'Gagal mengemas kini tetapan pangkalan data.', 'error');
+                    } finally {
+                        document.getElementById('loading_overlay').classList.add('hidden');
+                    }
+                }
             },
 
             togolPaparan: (jenis) => {

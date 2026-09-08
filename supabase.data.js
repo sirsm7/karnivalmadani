@@ -267,6 +267,40 @@ const db = {
             console.error("Ralat getSenaraiPasukanIkutSekolah:", error);
             return { success: false, error: error.message };
         }
+    },
+
+    // 13. Dapatkan Tetapan Sistem
+    async getTetapanSistem(setting_key) {
+        try {
+            const { data, error } = await supabaseClient
+                .from('karnival_settings')
+                .select('setting_value')
+                .eq('setting_key', setting_key)
+                .maybeSingle();
+            
+            if (error) throw error;
+            // Kembalikan nilai boolean, lalai kepada false jika tiada rekod dijumpai
+            return { success: true, value: data ? data.setting_value : false };
+        } catch (error) {
+            console.error("Ralat getTetapanSistem:", error);
+            return { success: false, error: error.message };
+        }
+    },
+
+    // 14. Kemaskini Tetapan Sistem (Digunakan oleh Admin)
+    async kemaskiniTetapanSistem(setting_key, setting_value) {
+        try {
+            const { error } = await supabaseClient
+                .from('karnival_settings')
+                .update({ setting_value: setting_value, updated_at: new Date().toISOString() })
+                .eq('setting_key', setting_key);
+            
+            if (error) throw error;
+            return { success: true };
+        } catch (error) {
+            console.error("Ralat kemaskiniTetapanSistem:", error);
+            return { success: false, error: error.message };
+        }
     }
 };
 

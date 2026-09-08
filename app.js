@@ -18,8 +18,9 @@ const appState = {
     imgBorderBase64: null, // Added cache for border image
     fontGreatVibesBase64: null, // Cache untuk font
 
-    // Status Penutupan Sistem
-    isSistemTutup: false
+    // Status Penutupan Sistem Berasingan
+    isMasaTamat: false,     // True jika timer tamat
+    isManualTutup: false    // True jika admin tutup manual di DB
 };
 
 // --- DOM ELEMENTS ---
@@ -44,6 +45,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 function mulaPemasa() {
     // Tarikh tamat ditetapkan pada 9 Sept 2026 09:00 pagi
     const tarikhTutup = new Date("2026-09-09T09:00:00+08:00").getTime();
+    let hasTriggeredTamat = false; // Flag untuk kemaskini UI sekali
     
     const x = setInterval(function() {
         const sekarang = new Date().getTime();
@@ -51,7 +53,7 @@ function mulaPemasa() {
         
         if (baki < 0) {
             clearInterval(x);
-            appState.isSistemTutup = true;
+            appState.isMasaTamat = true;
             
             // Kemas kini UI UI Timer di Index.html
             const kontenaPemasa = document.getElementById('kontena_pemasa');
@@ -59,27 +61,20 @@ function mulaPemasa() {
             const banner = document.getElementById('banner_countdown');
             
             if (kontenaPemasa) kontenaPemasa.classList.add('hidden');
-            if (teksTamat) teksTamat.classList.remove('hidden');
+            if (teksTamat) {
+                teksTamat.textContent = "PENGHANTARAN VIDEO TELAH DITUTUP";
+                teksTamat.classList.remove('hidden');
+            }
             if (banner) {
                 banner.classList.remove('from-red-600', 'to-orange-500');
                 banner.classList.add('bg-gray-800', 'text-white');
             }
 
-            // Sembunyikan elemen UI pendaftaran/kemaskini secara dinamik jika berada di skrin tersebut
-            const btnSimpanGuru = document.getElementById('btn_simpan_guru');
-            const btnTambahPasukan = document.getElementById('btn_tambah_pasukan');
-            const formPasukan = document.getElementById('form_pasukan');
-            
-            if (btnSimpanGuru) btnSimpanGuru.disabled = true;
-            if (btnTambahPasukan) {
-                btnTambahPasukan.disabled = true;
-                btnTambahPasukan.classList.replace('bg-blue-600', 'bg-gray-400');
-                btnTambahPasukan.textContent = "PENDAFTARAN TELAH DITUTUP";
+            // Kemas kini UI jika guru sedang berada di dashboard (Tutup ruang input video sahaja)
+            if (!hasTriggeredTamat && appState.guru && document.getElementById('view_dashboard_guru').classList.contains('hidden') === false) {
+                app.renderPasukanList();
             }
-            if (formPasukan) {
-                const inputs = formPasukan.querySelectorAll('input, button');
-                inputs.forEach(el => el.disabled = true);
-            }
+            hasTriggeredTamat = true;
             
         } else {
             // Pengiraan pecahan masa
@@ -105,13 +100,19 @@ function mulaPemasa() {
 async function initApp() {
     showLoading("Memuatkan data...");
     
-    // Muatkan statistik dan senarai sekolah serentak (Parallel)
-    const [sekolahRes, statistikRes] = await Promise.all([
+    // Muatkan statistik, senarai sekolah dan tetapan admin serentak (Parallel)
+    const [sekolahRes, statistikRes, settingRes] = await Promise.all([
         window.db.getSenaraiSekolah(),
-        window.db.getStatistikPendaftaran('Animasi AI')
+        window.db.getStatistikPendaftaran('Animasi AI'),
+        window.db.getTetapanSistem('video_submission_closed')
     ]);
     
     hideLoading();
+
+    // Simpan status tetapan admin
+    if (settingRes && settingRes.success) {
+        appState.isManualTutup = settingRes.value;
+    }
 
     // Proses data sekolah
     if (sekolahRes.success) {
@@ -489,10 +490,7 @@ const app = {
     simpanGuru: async (e) => {
         e.preventDefault();
         
-        if (appState.isSistemTutup) {
-            Swal.fire('Ditutup', 'Pendaftaran telah ditutup.', 'error');
-            return;
-        }
+        // Pembuangan sekatan isSistemTutup, pendaftaran profil dibenarkan pada bila-bila masa
 
         const nama = document.getElementById('guru_nama').value.trim().toUpperCase();
         const nokp = document.getElementById('guru_nokp').value.trim();
@@ -586,13 +584,7 @@ const app = {
 
         await app.loadPasukanList();
         
-        // Disable butang daftar baru sekiranya sistem telah ditutup
-        const btnTambah = document.getElementById('btn_tambah_pasukan');
-        if (appState.isSistemTutup && btnTambah) {
-            btnTambah.disabled = true;
-            btnTambah.classList.replace('bg-blue-600', 'bg-gray-400');
-            btnTambah.textContent = "PENDAFTARAN TELAH DITUTUP";
-        }
+        // Nota: Butang tambah pasukan kini dibenarkan secara berterusan (tiada sekatan masa)
     },
 
     loadPasukanList: async () => {
@@ -605,16 +597,16 @@ const app = {
             document.getElementById('count_pasukan').textContent = appState.pasukanList.length;
             
             const btnTambah = document.getElementById('btn_tambah_pasukan');
-            if (!appState.isSistemTutup) {
-                if (appState.pasukanList.length >= 10) {
-                    btnTambah.disabled = true;
-                    btnTambah.classList.replace('bg-blue-600', 'bg-gray-400');
-                    btnTambah.textContent = "Had Maksimun (10/10) Pasukan Dicapai";
-                } else {
-                    btnTambah.disabled = false;
-                    btnTambah.classList.replace('bg-gray-400', 'bg-blue-600');
-                    btnTambah.innerHTML = `+ Daftar Pasukan Baru (<span id="count_pasukan">${appState.pasukanList.length}</span>/10)`;
-                }
+            
+            // Sentiasa membenarkan pertambahan pasukan mengikut kuota (pembuangan syarat isSistemTutup)
+            if (appState.pasukanList.length >= 10) {
+                btnTambah.disabled = true;
+                btnTambah.classList.replace('bg-blue-600', 'bg-gray-400');
+                btnTambah.textContent = "Had Maksimun (10/10) Pasukan Dicapai";
+            } else {
+                btnTambah.disabled = false;
+                btnTambah.classList.replace('bg-gray-400', 'bg-blue-600');
+                btnTambah.innerHTML = `+ Daftar Pasukan Baru (<span id="count_pasukan">${appState.pasukanList.length}</span>/10)`;
             }
 
             const containerSijilKehadiran = document.getElementById('container_sijil_kehadiran');
@@ -631,10 +623,6 @@ const app = {
     },
 
     bukaBorangPasukan: () => {
-        if (appState.isSistemTutup) {
-            Swal.fire('Ditutup', 'Pendaftaran telah ditutup.', 'error');
-            return;
-        }
         if (appState.pasukanList.length >= 10) {
             Swal.fire('Had Dicapai', 'Maksimum 10 pasukan dibenarkan untuk satu akaun guru.', 'warning');
             return;
@@ -652,10 +640,7 @@ const app = {
     simpanPasukan: async (e) => {
         e.preventDefault();
         
-        if (appState.isSistemTutup) {
-            Swal.fire('Ditutup', 'Pendaftaran telah ditutup.', 'error');
-            return;
-        }
+        // Pendaftaran sentiasa dibenarkan
 
         const nama_pasukan = document.getElementById('pasukan_nama').value.trim();
         const m1_emel = document.getElementById('murid1_emel').value.trim().toLowerCase();
@@ -696,11 +681,6 @@ const app = {
     },
     
     bukaBorangKemaskini: (pasukan_id) => {
-        if (appState.isSistemTutup) {
-            Swal.fire('Ditutup', 'Kemaskini maklumat tidak lagi dibenarkan selepas tarikh tutup.', 'error');
-            return;
-        }
-        
         const pasukan = appState.pasukanList.find(p => p.id === pasukan_id);
         if (!pasukan) return;
 
@@ -741,10 +721,7 @@ const app = {
     simpanKemaskiniPasukan: async (e) => {
         e.preventDefault();
         
-        if (appState.isSistemTutup) {
-            Swal.fire('Ditutup', 'Kemaskini maklumat tidak lagi dibenarkan selepas tarikh tutup.', 'error');
-            return;
-        }
+        // Kemaskini maklumat sentiasa dibenarkan
 
         const pasukan_id = document.getElementById('edit_pasukan_id').value;
         const nama_pasukan = document.getElementById('edit_pasukan_nama').value.trim();
@@ -792,11 +769,6 @@ const app = {
     },
 
     mintaPadamPasukan: async (pasukan_id) => {
-        if (appState.isSistemTutup) {
-            Swal.fire('Ditutup', 'Kemaskini/Pemadaman maklumat tidak lagi dibenarkan selepas tarikh tutup.', 'error');
-            return;
-        }
-        
         const result = await Swal.fire({
             title: 'Anda pasti?',
             text: "Rekod pasukan ini akan dipadam secara kekal. Tindakan ini tidak boleh dipatahbalik.",
@@ -837,25 +809,28 @@ const app = {
                 ? `<span class="bg-green-100 text-green-800 text-xs font-semibold px-2 py-1 rounded">Disahkan Oleh Admin</span>` 
                 : `<span class="bg-yellow-100 text-yellow-800 text-xs font-semibold px-2 py-1 rounded">Menunggu Semakan</span>`;
 
+            // Butang Edit dan Padam sentiasa boleh digunakan (tidak tertakluk dengan timer video)
             let editDeleteUI = '';
-            if (!isDisahkan && !appState.isSistemTutup) {
+            if (!isDisahkan) {
                 editDeleteUI = `
                     <div class="flex gap-2">
                         <button onclick="app.bukaBorangKemaskini('${pasukan.id}')" class="text-sm bg-yellow-500 hover:bg-yellow-600 text-white px-3 py-1 rounded transition">✏️ Edit</button>
                         <button onclick="app.mintaPadamPasukan('${pasukan.id}')" class="text-sm bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded transition">🗑️ Padam</button>
                     </div>
                 `;
-            } else if (appState.isSistemTutup) {
-                editDeleteUI = `<span class="text-xs text-red-500 font-bold">TERKUNCI (Ditutup)</span>`;
             }
 
             const currentLink = pasukan.pautan_hasil || '';
+            const isVideoClosed = appState.isMasaTamat || appState.isManualTutup;
+            let statusTutupTeks = isVideoClosed ? '<span class="text-xs text-red-500 font-bold ml-2">(Ditutup)</span>' : '';
+
+            // Bahagian Video sahaja yang akan dikunci berdasarkan isVideoClosed
             const actionUI = `
                 <div class="mt-3 bg-gray-50 p-3 rounded border border-gray-200">
-                    <label class="block text-sm font-bold mb-1">Pautan YouTube Hasil Akhir:</label>
+                    <label class="block text-sm font-bold mb-1 flex items-center">Pautan YouTube Hasil Akhir: ${statusTutupTeks}</label>
                     <div class="flex gap-2">
-                        <input type="url" id="link_${pasukan.id}" ${appState.isSistemTutup ? 'disabled' : ''} class="w-full px-2 py-1 text-sm border rounded lowercase" value="${currentLink}" placeholder="https://youtube.com/...">
-                        <button onclick="app.simpanLinkAnimasi('${pasukan.id}')" ${appState.isSistemTutup ? 'disabled' : ''} class="${appState.isSistemTutup ? 'bg-gray-400 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700'} text-white text-sm px-3 py-1 rounded whitespace-nowrap">Simpan Link</button>
+                        <input type="url" id="link_${pasukan.id}" ${isVideoClosed ? 'disabled' : ''} class="w-full px-2 py-1 text-sm border rounded lowercase" value="${currentLink}" placeholder="https://youtube.com/...">
+                        <button onclick="app.simpanLinkAnimasi('${pasukan.id}')" ${isVideoClosed ? 'disabled' : ''} class="${isVideoClosed ? 'bg-gray-400 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700'} text-white text-sm px-3 py-1 rounded whitespace-nowrap">Simpan Link</button>
                     </div>
                 </div>
             `;
@@ -875,7 +850,7 @@ const app = {
             }
 
             const html = `
-                <div class="bg-white border rounded-lg p-4 shadow-sm hover:shadow-md transition ${appState.isSistemTutup ? 'opacity-80' : ''}">
+                <div class="bg-white border rounded-lg p-4 shadow-sm hover:shadow-md transition">
                     <div class="flex flex-col md:flex-row md:justify-between md:items-start gap-2 mb-2">
                         <div>
                             <h4 class="font-bold text-lg text-gray-800">${index + 1}. ${pasukan.nama_pasukan}</h4>
@@ -897,8 +872,8 @@ const app = {
     },
 
     simpanLinkAnimasi: async (pasukan_id) => {
-        if (appState.isSistemTutup) {
-            Swal.fire('Ditutup', 'Penghantaran/Kemaskini pautan telah ditutup.', 'error');
+        if (appState.isMasaTamat || appState.isManualTutup) {
+            Swal.fire('Ditutup', 'Penghantaran dan kemaskini pautan video telah ditutup.', 'error');
             return;
         }
         
