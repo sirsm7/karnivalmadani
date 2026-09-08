@@ -95,32 +95,39 @@
                     <div class="border-t-2 border-gray-300 my-6"></div>
                     <h3 class="font-bold text-lg mb-4 text-gray-800">Senarai Pasukan Berdaftar</h3>
 
-                    <!-- Filters -->
-                    <div class="bg-gray-50 p-4 rounded-lg mb-6 border flex flex-col md:flex-row gap-4">
-                        <div class="w-full md:w-1/3">
-                            <label class="block text-sm font-bold mb-1">Tapis Pertandingan:</label>
-                            <select id="filter_pertandingan" class="w-full px-2 py-1 border rounded focus:ring focus:ring-blue-200" onchange="adminApp.renderTable()">
-                                <option value="Semua">Semua Pertandingan</option>
-                                <option value="Animasi AI">Pertandingan Video Animasi AI Kemerdekaan 2026</option>
-                            </select>
+                    <!-- Filters & Telegram Action -->
+                    <div class="bg-gray-50 p-4 rounded-lg mb-6 border">
+                        <div class="flex flex-col md:flex-row gap-4 mb-4">
+                            <div class="w-full md:w-1/3">
+                                <label class="block text-sm font-bold mb-1">Tapis Pertandingan:</label>
+                                <select id="filter_pertandingan" class="w-full px-2 py-1 border rounded focus:ring focus:ring-blue-200" onchange="adminApp.renderTable()">
+                                    <option value="Semua">Semua Pertandingan</option>
+                                    <option value="Animasi AI">Pertandingan Video Animasi AI Kemerdekaan 2026</option>
+                                </select>
+                            </div>
+                            <div class="w-full md:w-1/3">
+                                <label class="block text-sm font-bold mb-1">Tapis Kategori:</label>
+                                <select id="filter_kategori" class="w-full px-2 py-1 border rounded focus:ring focus:ring-blue-200" onchange="adminApp.renderTable()">
+                                    <option value="Semua">Semua Kategori</option>
+                                    <option value="Sekolah Rendah (Perdana)">Sekolah Rendah (Perdana)</option>
+                                    <option value="Sekolah Rendah (PPKI)">Sekolah Rendah (PPKI)</option>
+                                    <option value="Sekolah Menengah (Perdana)">Sekolah Menengah (Perdana)</option>
+                                    <option value="Sekolah Menengah (PPKI)">Sekolah Menengah (PPKI)</option>
+                                </select>
+                            </div>
+                            <div class="w-full md:w-1/3">
+                                <label class="block text-sm font-bold mb-1">Tapis Status:</label>
+                                <select id="filter_status" class="w-full px-2 py-1 border rounded focus:ring focus:ring-blue-200" onchange="adminApp.renderTable()">
+                                    <option value="Semua">Semua Status</option>
+                                    <option value="Menunggu">Menunggu Semakan / Belum Hantar</option>
+                                    <option value="Disahkan">Telah Disahkan</option>
+                                </select>
+                            </div>
                         </div>
-                        <div class="w-full md:w-1/3">
-                            <label class="block text-sm font-bold mb-1">Tapis Kategori:</label>
-                            <select id="filter_kategori" class="w-full px-2 py-1 border rounded focus:ring focus:ring-blue-200" onchange="adminApp.renderTable()">
-                                <option value="Semua">Semua Kategori</option>
-                                <option value="Sekolah Rendah (Perdana)">Sekolah Rendah (Perdana)</option>
-                                <option value="Sekolah Rendah (PPKI)">Sekolah Rendah (PPKI)</option>
-                                <option value="Sekolah Menengah (Perdana)">Sekolah Menengah (Perdana)</option>
-                                <option value="Sekolah Menengah (PPKI)">Sekolah Menengah (PPKI)</option>
-                            </select>
-                        </div>
-                        <div class="w-full md:w-1/3">
-                            <label class="block text-sm font-bold mb-1">Tapis Status:</label>
-                            <select id="filter_status" class="w-full px-2 py-1 border rounded focus:ring focus:ring-blue-200" onchange="adminApp.renderTable()">
-                                <option value="Semua">Semua Status</option>
-                                <option value="Menunggu">Menunggu Semakan / Belum Hantar</option>
-                                <option value="Disahkan">Telah Disahkan</option>
-                            </select>
+                        <div class="flex justify-end border-t border-gray-200 pt-4">
+                            <button onclick="adminApp.salinKeTelegram()" class="bg-teal-500 hover:bg-teal-600 text-white text-sm font-bold py-1.5 px-4 rounded shadow transition flex items-center gap-2">
+                                📱 Salin Maklumat Telegram
+                            </button>
                         </div>
                     </div>
 
@@ -634,6 +641,79 @@
                     `;
                     tbody.appendChild(tr);
                 });
+            },
+
+            salinKeTelegram: async () => {
+                const fPertandingan = document.getElementById('filter_pertandingan').value;
+                const fKategori = document.getElementById('filter_kategori').value;
+                const fStatus = document.getElementById('filter_status').value;
+
+                // Tapisan semula rekod berdasarkan dropdown
+                let filtered = adminApp.dataPasukan.filter(item => {
+                    const guru = item.karnival_guru;
+                    if (!guru) return false;
+
+                    let matchPertandingan = true;
+                    if (fPertandingan !== 'Semua') {
+                        matchPertandingan = guru.pertandingan === fPertandingan;
+                    }
+
+                    let matchKategori = true;
+                    if (fKategori !== 'Semua') {
+                        matchKategori = guru.kategori_pertandingan === fKategori;
+                    }
+
+                    let matchStatus = true;
+                    if (fStatus === 'Menunggu') {
+                        matchStatus = item.disahkan === false;
+                    } else if (fStatus === 'Disahkan') {
+                        matchStatus = item.disahkan === true;
+                    }
+
+                    return matchPertandingan && matchKategori && matchStatus;
+                });
+
+                if (filtered.length === 0) {
+                    Swal.fire('Maklumat', 'Tiada rekod untuk disalin berdasarkan tapisan semasa.', 'info');
+                    return;
+                }
+
+                let teks = `*SENARAI PASUKAN PENDIDIKAN MADANI 2026*\n`;
+                teks += `Kategori: ${fKategori}\n`;
+                teks += `Status: ${fStatus}\n`;
+                teks += `Jumlah: ${filtered.length} Pasukan\n\n`;
+
+                filtered.forEach((item, index) => {
+                    const guru = item.karnival_guru;
+                    const sekolah = guru.karnival_sekolah;
+                    const statusSijil = item.disahkan ? '✅ Disahkan' : '⏳ Menunggu';
+                    const statusVideo = item.pautan_hasil ? '🎥 Ada Video' : '❌ Tiada Video';
+                    
+                    teks += `${index + 1}. *${sekolah.nama}* (${sekolah.kod})\n`;
+                    teks += `   Pasukan: ${item.nama_pasukan}\n`;
+                    teks += `   Guru: ${guru.nama} (${guru.notel})\n`;
+                    teks += `   Status: ${statusSijil} | ${statusVideo}\n`;
+                    
+                    if (item.pautan_hasil) {
+                        teks += `   Pautan: ${item.pautan_hasil}\n`;
+                    }
+                    teks += `\n`;
+                });
+
+                try {
+                    await navigator.clipboard.writeText(teks);
+                    Swal.fire({ 
+                        toast: true, 
+                        position: 'top-end', 
+                        icon: 'success', 
+                        title: 'Teks format Telegram berjaya disalin ke clipboard!', 
+                        showConfirmButton: false, 
+                        timer: 3000 
+                    });
+                } catch (err) {
+                    console.error('Gagal menyalin:', err);
+                    Swal.fire('Ralat', 'Gagal menyalin ke clipboard. Sila semak tetapan kebenaran pelayar anda.', 'error');
+                }
             },
 
             // --- PAPARAN RANKING ---
