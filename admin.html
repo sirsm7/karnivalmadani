@@ -72,6 +72,7 @@
                             <button id="tab_ranking" onclick="adminApp.togolPaparan('ranking')" class="text-gray-600 hover:bg-gray-300 px-4 py-1.5 rounded-md text-sm font-bold transition">🏆 Paparan Ranking</button>
                         </div>
                         
+                        <button onclick="adminApp.salinRumusanTelegram()" class="text-indigo-700 text-sm hover:underline font-bold bg-indigo-50 px-3 py-1.5 rounded border border-indigo-300 shadow-sm flex items-center gap-1">📋 Salin Rumusan</button>
                         <button onclick="adminApp.eksportKeExcel()" class="text-green-700 text-sm hover:underline font-bold bg-green-50 px-3 py-1.5 rounded border border-green-300 shadow-sm flex items-center gap-1">📊 Eksport Excel</button>
                         <button onclick="adminApp.loadSenarai()" class="text-blue-600 text-sm hover:underline font-bold bg-blue-50 px-3 py-1.5 rounded border border-blue-200 shadow-sm">🔄 Segarkan</button>
                         <button onclick="adminApp.logout()" class="text-red-500 text-sm hover:underline font-bold bg-red-50 px-3 py-1.5 rounded border border-red-200 shadow-sm">Keluar</button>
@@ -866,8 +867,87 @@
                 }
             },
 
-            // --- EKSPORT EXCEL & LOGIK KIRAAN RANKING KESELURUHAN ---
+            // --- EKSPORT EXCEL, RUMUSAN & LOGIK KIRAAN RANKING KESELURUHAN ---
             
+            salinRumusanTelegram: async () => {
+                const kumpulKategori = {};
+                let jumlahKeseluruhan = 0;
+
+                // Kumpulkan semua pasukan mengikut kategori
+                adminApp.dataPasukan.forEach(p => {
+                    const guru = p.karnival_guru;
+                    if (!guru) return;
+                    
+                    const kat = guru.kategori_pertandingan;
+                    if (!kumpulKategori[kat]) {
+                        kumpulKategori[kat] = [];
+                    }
+                    kumpulKategori[kat].push(p);
+                    jumlahKeseluruhan++;
+                });
+
+                if (jumlahKeseluruhan === 0) {
+                    Swal.fire('Maklumat', 'Tiada rekod pasukan untuk dirumuskan.', 'info');
+                    return;
+                }
+
+                let teks = `**Ringkasan Penyertaan Sekolah** 📊\n`;
+                teks += `**Jumlah Keseluruhan Pasukan:** ${jumlahKeseluruhan} 👥\n\n`;
+
+                // Susunan kategori
+                const kategoriSusunan = [
+                    "Sekolah Menengah (Perdana)",
+                    "Sekolah Rendah (PPKI)",
+                    "Sekolah Rendah (Perdana)",
+                    "Sekolah Menengah (PPKI)"
+                ];
+
+                kategoriSusunan.forEach(kat => {
+                    const pasukanDalamKategori = kumpulKategori[kat];
+                    if (pasukanDalamKategori && pasukanDalamKategori.length > 0) {
+                        
+                        // Kumpulkan mengikut sekolah dalam kategori ini
+                        const kumpulSekolah = {};
+                        pasukanDalamKategori.forEach(p => {
+                            const namaSekolah = p.karnival_guru.karnival_sekolah.nama;
+                            if (!kumpulSekolah[namaSekolah]) {
+                                kumpulSekolah[namaSekolah] = 0;
+                            }
+                            kumpulSekolah[namaSekolah]++;
+                        });
+                        
+                        // Tukar kepada array dan susun mengikut bilangan pasukan menurun (descending)
+                        const senaraiSekolahArr = Object.keys(kumpulSekolah).map(nama => {
+                            return { nama: nama, count: kumpulSekolah[nama] };
+                        });
+                        senaraiSekolahArr.sort((a, b) => b.count - a.count);
+
+                        teks += `__${kat}__ 🏫\n`;
+                        teks += `Jumlah Sekolah Terlibat: ${senaraiSekolahArr.length}\n`;
+                        
+                        senaraiSekolahArr.forEach(s => {
+                            teks += `• ${s.nama} - ${s.count} pasukan\n`;
+                        });
+                        teks += `\n`;
+                    }
+                });
+
+                try {
+                    await navigator.clipboard.writeText(teks.trim());
+                    Swal.fire({ 
+                        toast: true, 
+                        position: 'top-end', 
+                        icon: 'success', 
+                        title: 'Rumusan berjaya disalin ke clipboard!', 
+                        showConfirmButton: false, 
+                        timer: 3000 
+                    });
+                } catch (err) {
+                    console.error('Gagal menyalin:', err);
+                    Swal.fire('Ralat', 'Gagal menyalin ke clipboard. Sila semak tetapan kebenaran pelayar anda.', 'error');
+                }
+            },
+
             kiraDataRanking: () => {
                 // 1. Integrasi Markah dengan Pasukan
                 const pasukanMarkah = adminApp.dataPasukan.map(p => {
