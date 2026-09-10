@@ -1033,9 +1033,13 @@
                             else medal = `Tempat Ke-${index + 1}: `;
 
                             teks += `${medal}**${sekolahNama}**\n`;
-                            teks += `Pasukan: __${p.nama_pasukan}__\n\n`;
+                            teks += `Pasukan: __${p.nama_pasukan}__\n`;
+                            
+                            if (p.pautan_hasil) {
+                                teks += `Pautan: ${p.pautan_hasil}\n`;
+                            }
+                            teks += `\n`;
                         });
-                        teks += `\n`;
                     }
                 });
 
