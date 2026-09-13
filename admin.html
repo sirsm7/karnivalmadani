@@ -58,9 +58,9 @@
                     <h2 class="text-xl font-bold text-gray-800">Dashboard Pengurusan</h2>
                     
                     <div class="flex flex-wrap items-center gap-3">
-                        <!-- Kawalan Manual Penghantaran Video -->
+                        <!-- Kawalan Manual Pendaftaran & Video -->
                         <div class="flex items-center gap-2 bg-gray-50 px-3 py-1.5 rounded border border-gray-200">
-                            <span class="text-xs font-bold text-gray-700 uppercase tracking-wide">Fungsi Hantar Video:</span>
+                            <span class="text-xs font-bold text-gray-700 uppercase tracking-wide">Fungsi Daftar/Video:</span>
                             <button id="btn_togol_video" onclick="adminApp.togolPenghantaranVideo()" class="bg-gray-400 text-white px-3 py-1 rounded text-xs font-bold transition shadow-sm">
                                 MEMUATKAN...
                             </button>
@@ -445,7 +445,7 @@
                 
                 const result = await Swal.fire({
                     title: 'Anda Pasti?',
-                    html: `Adakah anda pasti mahu <b>${statusTeks}</b> kebenaran untuk menghantar/mengemaskini pautan video oleh peserta?`,
+                    html: `Adakah anda pasti mahu <b>${statusTeks}</b> kebenaran untuk pendaftaran dan penghantaran video oleh peserta?`,
                     icon: 'warning',
                     showCancelButton: true,
                     confirmButtonText: 'Ya, Teruskan',
@@ -469,7 +469,7 @@
                             toast: true,
                             position: 'top-end',
                             icon: 'success',
-                            title: `Penghantaran video telah ${statusBaru ? 'ditutup' : 'dibuka'}`,
+                            title: `Pendaftaran dan penghantaran video telah ${statusBaru ? 'ditutup' : 'dibuka'}`,
                             showConfirmButton: false,
                             timer: 3000
                         });
