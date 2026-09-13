@@ -511,7 +511,7 @@
                         .from('karnival_pasukan')
                         .select(`
                             id, nama_pasukan, pautan_hasil, disahkan, created_at,
-                            karnival_guru ( id, nama, notel, pertandingan, kategori_pertandingan, karnival_sekolah (kod, nama) ),
+                            karnival_guru ( id, nama, nokp, notel, pertandingan, kategori_pertandingan, karnival_sekolah (kod, nama) ),
                             karnival_murid ( nama, nokp, emel )
                         `)
                         .order('created_at', { ascending: false });
@@ -523,7 +523,7 @@
                     const { data: dataGuru, error: errGuru } = await supabaseClientAdmin
                         .from('karnival_guru')
                         .select(`
-                            id, nama, notel, pertandingan, kategori_pertandingan,
+                            id, nama, nokp, notel, pertandingan, kategori_pertandingan,
                             karnival_sekolah (kod, nama),
                             karnival_pasukan (id)
                         `);
@@ -603,7 +603,7 @@
                             <div>
                                 <div class="font-bold text-gray-800 text-sm md:text-base">${guru.nama}</div>
                                 <div class="text-xs text-gray-600 mt-0.5"><span class="font-semibold text-gray-700">${guru.karnival_sekolah.kod}</span> - ${guru.karnival_sekolah.nama}</div>
-                                <div class="text-xs text-gray-500 mt-0.5">📞 ${guru.notel} | ${guru.kategori_pertandingan}</div>
+                                <div class="text-xs text-gray-500 mt-0.5">📞 ${guru.notel} | 🆔 ${guru.nokp} | ${guru.kategori_pertandingan}</div>
                                 ${jumlahPasukanHTML}
                             </div>
                             <div class="w-full sm:w-auto text-right">
@@ -713,7 +713,7 @@
                             <div class="font-bold text-gray-800">${sekolah.nama}</div>
                             <div class="text-xs font-semibold text-gray-500 mb-2">${sekolah.kod}</div>
                             <div class="text-xs text-gray-700 font-semibold mt-1">👤 ${guru.nama}</div>
-                            <div class="text-xs text-gray-500">📞 ${guru.notel}</div>
+                            <div class="text-xs text-gray-500">📞 ${guru.notel} | 🆔 ${guru.nokp}</div>
                             ${btnPadamGuru}
                         </td>
                         <td class="py-3 px-3 align-top">
@@ -1081,7 +1081,7 @@
                 // Tambahkan BOM untuk sokongan UTF-8 di Excel
                 let csvContent = "\uFEFF"; 
                 // Header turus
-                csvContent += "Kod Sekolah,Nama Sekolah,Nama Guru,No Tel Guru,Kategori Pertandingan,Nama Pasukan,Status Pengesahan,Pautan Video,Purata Markah,Jumlah Juri,Kedudukan (Ranking),Nama Murid 1,No KP 1,Emel Murid 1,Nama Murid 2,No KP 2,Emel Murid 2\n";
+                csvContent += "Kod Sekolah,Nama Sekolah,Nama Guru,No KP Guru,No Tel Guru,Kategori Pertandingan,Nama Pasukan,Status Pengesahan,Pautan Video,Purata Markah,Jumlah Juri,Kedudukan (Ranking),Nama Murid 1,No KP 1,Emel Murid 1,Nama Murid 2,No KP 2,Emel Murid 2\n";
 
                 flatData.forEach(p => {
                     const guru = p.karnival_guru;
@@ -1103,6 +1103,7 @@
                         safeString(sekolah.kod),
                         safeString(sekolah.nama),
                         safeString(guru.nama),
+                        safeExcelNumber(guru.nokp),
                         safeExcelNumber(guru.notel),
                         safeString(guru.kategori_pertandingan),
                         safeString(p.nama_pasukan),
