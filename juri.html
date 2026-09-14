@@ -228,12 +228,9 @@
         </div>
     </div>
 
-    <script>
-        // Supabase Constants
-        const SUPABASE_URL = "https://app.tech4ag.my";
-        const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYW5vbiIsImlzcyI6InN1cGFiYXNlIiwiaWF0IjoxNzYzMzczNjQ1LCJleHAiOjIwNzg3MzM2NDV9.vZOedqJzUn01PjwfaQp7VvRzSm4aRMr21QblPDK8AoY";
-        const supabaseClientJuri = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    <script src="supabase.data.js"></script>
 
+    <script>
         const juriApp = {
             juriName: null,
             dataPasukan: [],
@@ -293,7 +290,7 @@
 
             loadSenaraiJuriDropdown: async () => {
                 try {
-                    const { data, error } = await supabaseClientJuri
+                    const { data, error } = await window.supabaseClient
                         .from('karnival_penilaian')
                         .select('nama_juri');
                     
@@ -359,7 +356,7 @@
                 
                 try {
                     // Dapatkan semua pasukan dan markah
-                    const { data: dataPasukan, error: errPasukan } = await supabaseClientJuri
+                    const { data: dataPasukan, error: errPasukan } = await window.supabaseClient
                         .from('karnival_pasukan')
                         .select(`
                             id, nama_pasukan, pautan_hasil, disahkan,
@@ -575,7 +572,7 @@
                     
                     if (rekodId !== '') {
                         // UPDATE rekod sedia ada
-                        result = await supabaseClientJuri
+                        result = await window.supabaseClient
                             .from('karnival_penilaian')
                             .update({
                                 markah_tema: tema,
@@ -586,7 +583,7 @@
                             .eq('id', rekodId);
                     } else {
                         // INSERT rekod baru
-                        result = await supabaseClientJuri
+                        result = await window.supabaseClient
                             .from('karnival_penilaian')
                             .insert([{
                                 pasukan_id: juriApp.currentPasukanId,

@@ -420,6 +420,8 @@
                     document.getElementById('view_login').classList.add('hidden');
                     document.getElementById('view_dashboard').classList.remove('hidden');
                     
+                    // Baca tetapan sistem terlebih dahulu sebelum muat senarai
+                    adminApp.bukaTetapanSistem();
                     adminApp.loadSenarai();
                 } else {
                     Swal.fire('Ralat', 'Katalaluan Salah!', 'error');
