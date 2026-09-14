@@ -25,7 +25,10 @@ const appState = {
     
     isSistemTutupKecemasan: false, // Legacy fallback jika setting lama masih true
     isMasaTamat: false,
-    isBelumMula: false
+    isBelumMula: false,
+
+    // Kawalan Pop-up Pemasa
+    timerInterval: null
 };
 
 // --- DOM ELEMENTS ---
@@ -69,20 +72,6 @@ async function initApp() {
         appState.isSistemTutupKecemasan = (d.kategori_dibuka === "Tutup");
     }
 
-    // Paparkan UI Kategori jika sistem tidak ditutup mutlak
-    if (!appState.isSistemTutupKecemasan) {
-        const badgeKategori = document.getElementById('badge_kategori');
-        const teksKategori = document.getElementById('teks_kategori_dibuka');
-        
-        if (badgeKategori && teksKategori) {
-            teksKategori.textContent = appState.kategoriDibuka;
-            badgeKategori.classList.remove('hidden');
-        }
-    }
-
-    // Mulakan pemasa berdasarkan tarikh yang ditarik
-    mulaPemasa();
-
     // Proses data sekolah
     if (sekolahRes.success) {
         appState.sekolahRawList = sekolahRes.data;
@@ -98,126 +87,205 @@ async function initApp() {
         if (elSekolah) elSekolah.textContent = statistikRes.data.jumlah_sekolah || 0;
         if (elPasukan) elPasukan.textContent = statistikRes.data.jumlah_pasukan || 0;
     }
+
+    // Selepas pemuatan selesai, tunjukkan Modal Pemasa SweetAlert
+    paparModalPemasa();
 }
 
-function mulaPemasa() {
-    // Jika admin set "Tutup Semua Sistem" secara mutlak
+function paparModalPemasa() {
+    // 1. Bina struktur HTML untuk Modal
+    let htmlContent = `
+        <div class="bg-gradient-to-r from-red-600 to-orange-500 text-white p-6 md:p-8 flex flex-col items-center justify-center min-h-[200px] relative">
+            
+            <!-- Elemen Mesej Utama (Ditunjukkan jika tamat/tiada timer) -->
+            <div id="swal_teks_masa_tamat" class="hidden text-2xl font-black uppercase tracking-wider py-4 text-center leading-tight"></div>
+            
+            <!-- Elemen Timer -->
+            <div id="swal_kontena_pemasa" class="w-full flex flex-col items-center">
+                <p id="swal_tajuk_tarikh_pemasa" class="text-sm md:text-base font-bold mb-3 opacity-90 uppercase tracking-wide text-center">Menyemak Masa Pelayan...</p>
+                
+                <div class="flex justify-center items-center gap-2 md:gap-4 text-center">
+                    <div class="bg-white/20 rounded-lg px-3 py-2 min-w-[70px] shadow-sm"><span id="swal_cd_hari" class="block text-3xl md:text-4xl font-black">00</span><span class="text-[10px] md:text-xs font-semibold tracking-wider mt-1 block">HARI</span></div>
+                    <span class="text-3xl font-bold opacity-70 mb-5">:</span>
+                    <div class="bg-white/20 rounded-lg px-3 py-2 min-w-[70px] shadow-sm"><span id="swal_cd_jam" class="block text-3xl md:text-4xl font-black">00</span><span class="text-[10px] md:text-xs font-semibold tracking-wider mt-1 block">JAM</span></div>
+                    <span class="text-3xl font-bold opacity-70 mb-5">:</span>
+                    <div class="bg-white/20 rounded-lg px-3 py-2 min-w-[70px] shadow-sm"><span id="swal_cd_minit" class="block text-3xl md:text-4xl font-black">00</span><span class="text-[10px] md:text-xs font-semibold tracking-wider mt-1 block">MINIT</span></div>
+                    <span class="text-3xl font-bold opacity-70 mb-5">:</span>
+                    <div class="bg-white/20 rounded-lg px-3 py-2 min-w-[70px] shadow-sm"><span id="swal_cd_saat" class="block text-3xl md:text-4xl font-black">00</span><span class="text-[10px] md:text-xs font-semibold tracking-wider mt-1 block">SAAT</span></div>
+                </div>
+            </div>
+
+            <!-- Lencana Kategori -->
+            <div id="swal_badge_kategori" class="hidden mt-6 bg-white/20 px-4 py-1.5 rounded-full text-xs font-semibold tracking-wider whitespace-nowrap border border-white/30 backdrop-blur-sm shadow-sm">
+                KATEGORI DIBUKA: <span id="swal_teks_kategori_dibuka" class="font-bold text-white uppercase">${appState.kategoriDibuka}</span>
+            </div>
+        </div>
+    `;
+
+    // 2. Tembak SweetAlert
+    Swal.fire({
+        html: htmlContent,
+        showConfirmButton: true,
+        confirmButtonText: 'Tutup & Teruskan',
+        confirmButtonColor: '#1e3a8a', // blue-900
+        customClass: {
+            popup: 'swal2-status-popup',
+            confirmButton: 'mb-4 mt-2 px-8 py-2.5 text-sm font-bold uppercase tracking-wider rounded-lg shadow-md hover:shadow-lg transition-all',
+            htmlContainer: '!p-0 !m-0' // Memastikan tiada padding default supaya background cecah tepi
+        },
+        width: '600px',
+        padding: '0',
+        allowOutsideClick: false, // Wajib user klik butang untuk tutup
+        didOpen: () => {
+            // Sebaik sahaja modal dibuka, kita mulakan fungsi pengiraan dan kemas kini DOM di dalamnya
+            mulaPemasaSwal();
+        },
+        willClose: () => {
+            // Bersihkan timer bila modal ditutup supaya tidak membazir memori
+            if (appState.timerInterval) {
+                clearInterval(appState.timerInterval);
+                appState.timerInterval = null;
+            }
+        }
+    });
+}
+
+function mulaPemasaSwal() {
+    const swalContainer = Swal.getHtmlContainer();
+    if (!swalContainer) return; // Fail-safe jika modal tak sempat render
+
+    const elKontena = swalContainer.querySelector('#swal_kontena_pemasa');
+    const elTeksTamat = swalContainer.querySelector('#swal_teks_masa_tamat');
+    const elTajukTarikh = swalContainer.querySelector('#swal_tajuk_tarikh_pemasa');
+    const elBadge = swalContainer.querySelector('#swal_badge_kategori');
+    
+    // Set awal Lencana Kategori (Jika tak tutup kecemasan)
+    if (!appState.isSistemTutupKecemasan && elBadge) {
+        elBadge.classList.remove('hidden');
+    }
+
+    // Fungsi utiliti untuk mod statik dalam Swal
+    const setModTamatSwal = (mesej, isBukaSelamanya = false) => {
+        if (elKontena) elKontena.classList.add('hidden');
+        if (elBadge && !isBukaSelamanya) elBadge.classList.add('hidden');
+        if (elTeksTamat) {
+            elTeksTamat.textContent = mesej;
+            elTeksTamat.classList.remove('hidden');
+        }
+        
+        // Ubah warna latar belakang (akses DOM ibubapa)
+        const wrapper = swalContainer.querySelector('.bg-gradient-to-r');
+        if (wrapper && !isBukaSelamanya) {
+            wrapper.classList.remove('from-red-600', 'to-orange-500');
+            wrapper.classList.add('bg-gray-800');
+        }
+    };
+
+    // Semakan Segera 1: Jika admin set "Tutup Semua Sistem" secara mutlak
     if (appState.isSistemTutupKecemasan) {
         appState.isMasaTamat = true;
-        kemaskiniUITamat("PENDAFTARAN & PENGHANTARAN TELAH DITUTUP");
+        setModTamatSwal("PENDAFTARAN & PENGHANTARAN TELAH DITUTUP");
         return;
     }
 
-    // Jika tiada tarikh diset, kita anggap sistem sentiasa buka (fallback selamat)
+    // Semakan Segera 2: Jika tiada tarikh diset
     if (!appState.tarikhMula || !appState.tarikhTamat) {
-        kemaskiniUITamat("SISTEM DIBUKA (TIADA HAD MASA DISET)", true);
+        setModTamatSwal("SISTEM DIBUKA (TIADA HAD MASA DISET)", true);
         return;
     }
 
-    let hasTriggeredEvent = false; 
-    
-    const x = setInterval(function() {
+    // Jika ada tarikh, kita jalankan interval
+    appState.timerInterval = setInterval(() => {
+        // Sentiasa cari elemen live di dalam Swal, kerana ia mungkin ditutup bila-bila masa
+        const liveContainer = Swal.getHtmlContainer();
+        if (!liveContainer) {
+            clearInterval(appState.timerInterval);
+            return;
+        }
+
         const sekarang = new Date().getTime();
         
-        // Semak fasa masa
+        // Fasa 1: Belum Mula
         if (sekarang < appState.tarikhMula) {
-            // Fasa 1: Belum Mula (Tunjuk timer ke arah Tarikh Mula)
             appState.isBelumMula = true;
             appState.isMasaTamat = false;
             
             const bakiMula = appState.tarikhMula - sekarang;
-            paparKiraanMasa(bakiMula);
+            paparKiraanMasaSwal(bakiMula, liveContainer);
             
-            // Set Tajuk Banner
-            const teksTamat = document.getElementById('teks_masa_tamat');
-            if (teksTamat && teksTamat.textContent !== "SISTEM AKAN DIBUKA DALAM MASA") {
-                teksTamat.textContent = "SISTEM AKAN DIBUKA DALAM MASA";
-                teksTamat.classList.remove('hidden');
+            const liveTeksTamat = liveContainer.querySelector('#swal_teks_masa_tamat');
+            const liveTajukTarikh = liveContainer.querySelector('#swal_tajuk_tarikh_pemasa');
+            
+            if (liveTeksTamat && liveTeksTamat.textContent !== "SISTEM AKAN DIBUKA DALAM MASA") {
+                liveTeksTamat.textContent = "SISTEM AKAN DIBUKA DALAM MASA";
+                liveTeksTamat.classList.remove('hidden');
+                liveTeksTamat.classList.add('mb-4', 'text-xl'); // adjust saiz sikit
                 
-                const tajukTarikh = document.getElementById('tajuk_tarikh_pemasa');
-                if(tajukTarikh) tajukTarikh.textContent = "Masa Sebelum Pendaftaran Dibuka";
+                if (liveTajukTarikh) liveTajukTarikh.textContent = "Masa Sebelum Pendaftaran Dibuka";
             }
             
-            // Kunci UI jika berada dalam dashboard
-            if (!hasTriggeredEvent && appState.guru && !document.getElementById('view_dashboard_guru').classList.contains('hidden')) {
-                app.loadPasukanList();
-                hasTriggeredEvent = true;
-            }
-            
+        // Fasa 2: Sedang Berlangsung
         } else if (sekarang >= appState.tarikhMula && sekarang <= appState.tarikhTamat) {
-            // Fasa 2: Sedang Berlangsung (Tunjuk timer ke arah Tarikh Tamat)
             appState.isBelumMula = false;
             appState.isMasaTamat = false;
-            hasTriggeredEvent = false; // Reset trigger supaya boleh kunci balik jika tamat kelak
             
             const bakiTamat = appState.tarikhTamat - sekarang;
-            paparKiraanMasa(bakiTamat);
+            paparKiraanMasaSwal(bakiTamat, liveContainer);
             
-            // Set Tajuk Banner
-            const teksTamat = document.getElementById('teks_masa_tamat');
-            if (teksTamat && !teksTamat.classList.contains('hidden')) {
-                teksTamat.classList.add('hidden'); // Sembunyikan teks besar sebab nak tunjuk timer biasa
-                
-                const tajukTarikh = document.getElementById('tajuk_tarikh_pemasa');
-                if(tajukTarikh) tajukTarikh.textContent = "Tarikh Tutup Pendaftaran & Penghantaran";
+            const liveTeksTamat = liveContainer.querySelector('#swal_teks_masa_tamat');
+            const liveTajukTarikh = liveContainer.querySelector('#swal_tajuk_tarikh_pemasa');
+            
+            if (liveTeksTamat && !liveTeksTamat.classList.contains('hidden')) {
+                liveTeksTamat.classList.add('hidden'); 
+                if (liveTajukTarikh) liveTajukTarikh.textContent = "Tarikh Tutup Pendaftaran & Penghantaran";
             }
             
+        // Fasa 3: Telah Tamat
         } else {
-            // Fasa 3: Telah Tamat
-            clearInterval(x);
+            clearInterval(appState.timerInterval);
             appState.isBelumMula = false;
             appState.isMasaTamat = true;
             
-            kemaskiniUITamat("PENDAFTARAN & PENGHANTARAN TELAH DITUTUP");
+            const liveKontena = liveContainer.querySelector('#swal_kontena_pemasa');
+            const liveBadge = liveContainer.querySelector('#swal_badge_kategori');
+            const liveTeksTamat = liveContainer.querySelector('#swal_teks_masa_tamat');
+            const liveWrapper = liveContainer.querySelector('.bg-gradient-to-r');
 
-            // Kemas kini UI jika guru sedang berada di dashboard
-            if (!hasTriggeredEvent && appState.guru && !document.getElementById('view_dashboard_guru').classList.contains('hidden')) {
+            if (liveKontena) liveKontena.classList.add('hidden');
+            if (liveBadge) liveBadge.classList.add('hidden');
+            if (liveTeksTamat) {
+                liveTeksTamat.textContent = "PENDAFTARAN & PENGHANTARAN TELAH DITUTUP";
+                liveTeksTamat.classList.remove('hidden');
+                liveTeksTamat.classList.remove('text-xl', 'mb-4'); // reset classes if modified in phase 1
+            }
+            if (liveWrapper) {
+                liveWrapper.classList.remove('from-red-600', 'to-orange-500');
+                liveWrapper.classList.add('bg-gray-800');
+            }
+            
+            // Re-render senarai pasukan jika guru sedang di dashboard apabila masa tamat
+            if (appState.guru && !document.getElementById('view_dashboard_guru').classList.contains('hidden')) {
                 app.loadPasukanList();
-                hasTriggeredEvent = true;
             }
         }
-    }, 1000);
+    }, 1000); // 1 saat
 }
 
-function paparKiraanMasa(baki) {
+function paparKiraanMasaSwal(baki, swalContainer) {
     const hari = Math.floor(baki / (1000 * 60 * 60 * 24));
     const jam = Math.floor((baki % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
     const minit = Math.floor((baki % (1000 * 60 * 60)) / (1000 * 60));
     const saat = Math.floor((baki % (1000 * 60)) / 1000);
     
-    const elHari = document.getElementById('cd_hari');
-    const elJam = document.getElementById('cd_jam');
-    const elMinit = document.getElementById('cd_minit');
-    const elSaat = document.getElementById('cd_saat');
+    const elHari = swalContainer.querySelector('#swal_cd_hari');
+    const elJam = swalContainer.querySelector('#swal_cd_jam');
+    const elMinit = swalContainer.querySelector('#swal_cd_minit');
+    const elSaat = swalContainer.querySelector('#swal_cd_saat');
     
     if (elHari) elHari.textContent = hari < 10 ? "0" + hari : hari;
     if (elJam) elJam.textContent = jam < 10 ? "0" + jam : jam;
     if (elMinit) elMinit.textContent = minit < 10 ? "0" + minit : minit;
     if (elSaat) elSaat.textContent = saat < 10 ? "0" + saat : saat;
-}
-
-function kemaskiniUITamat(teksPesanan, isTerbukaSelamanya = false) {
-    const kontenaPemasa = document.getElementById('kontena_pemasa');
-    const teksTamat = document.getElementById('teks_masa_tamat');
-    const banner = document.getElementById('banner_countdown');
-    const badgeKategori = document.getElementById('badge_kategori');
-    
-    if (kontenaPemasa) kontenaPemasa.classList.add('hidden');
-    
-    if (teksTamat) {
-        teksTamat.textContent = teksPesanan;
-        teksTamat.classList.remove('hidden');
-    }
-    
-    // Sembunyikan lencana kategori jika sistem dah tamat
-    if (badgeKategori && !isTerbukaSelamanya) {
-        badgeKategori.classList.add('hidden');
-    }
-    
-    if (!isTerbukaSelamanya && banner) {
-        banner.classList.remove('from-red-600', 'to-orange-500');
-        banner.classList.add('bg-gray-800', 'text-white');
-    }
 }
 
 // Navigasi Langkah 1
