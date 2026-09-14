@@ -1,10 +1,11 @@
-// Inisialisasi Supabase Client dengan nama pembolehubah yang berbeza
-// untuk mengelakkan konflik dengan window.supabase dari CDN
+// Maklumat API Supabase
 const SUPABASE_URL = "https://app.tech4ag.my";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYW5vbiIsImlzcyI6InN1cGFiYXNlIiwiaWF0IjoxNzYzMzczNjQ1LCJleHAiOjIwNzg3MzM2NDV9.vZOedqJzUn01PjwfaQp7VvRzSm4aRMr21QblPDK8AoY";
+
+// Inisialisasi Supabase Client
 const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-// Dedahkan supabaseClient ke window supaya admin.html dan juri.html boleh guna klien yang sama
+// Dedahkan supabaseClient ke window supaya admin.html dan juri.html boleh guna klien yang sama secara terus jika perlu
 window.supabaseClient = supabaseClient;
 
 const db = {
@@ -273,7 +274,7 @@ const db = {
         }
     },
 
-    // 13. Dapatkan Tetapan Sistem Individu (Telah dikemaskini untuk menyokong format TEXT)
+    // 13. Dapatkan Tetapan Sistem Individu
     async getTetapanSistem(setting_key) {
         try {
             const { data, error } = await supabaseClient
@@ -290,7 +291,7 @@ const db = {
         }
     },
 
-    // 14. Kemaskini Tetapan Sistem Individu (Telah dikemaskini menyokong format TEXT)
+    // 14. Kemaskini Tetapan Sistem Individu
     async kemaskiniTetapanSistem(setting_key, setting_value) {
         try {
             const { error } = await supabaseClient
@@ -338,4 +339,13 @@ const db = {
                 .upsert(settingsArray, { onConflict: 'setting_key' });
             
             if (error) throw error;
-            return
+            return { success: true };
+        } catch (error) {
+            console.error("Ralat kemaskiniBanyakTetapan:", error);
+            return { success: false, error: error.message };
+        }
+    }
+};
+
+// Pastikan objek db tersedia secara global untuk digunakan oleh app.js dan UI lain
+window.db = db;
