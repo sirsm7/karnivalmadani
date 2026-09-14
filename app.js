@@ -65,8 +65,19 @@ async function initApp() {
         appState.tarikhTamat = d.tarikh_tamat ? new Date(d.tarikh_tamat).getTime() : null;
         appState.kategoriDibuka = d.kategori_dibuka || "Semua";
         
-        // Master switch kecemasan (Legacy support jika ada)
-        appState.isSistemTutupKecemasan = (d.kategori_dibuka === "Tutup") || (d.video_submission_closed === 'true');
+        // Master switch kecemasan
+        appState.isSistemTutupKecemasan = (d.kategori_dibuka === "Tutup");
+    }
+
+    // Paparkan UI Kategori jika sistem tidak ditutup mutlak
+    if (!appState.isSistemTutupKecemasan) {
+        const badgeKategori = document.getElementById('badge_kategori');
+        const teksKategori = document.getElementById('teks_kategori_dibuka');
+        
+        if (badgeKategori && teksKategori) {
+            teksKategori.textContent = appState.kategoriDibuka;
+            badgeKategori.classList.remove('hidden');
+        }
     }
 
     // Mulakan pemasa berdasarkan tarikh yang ditarik
@@ -189,11 +200,18 @@ function kemaskiniUITamat(teksPesanan, isTerbukaSelamanya = false) {
     const kontenaPemasa = document.getElementById('kontena_pemasa');
     const teksTamat = document.getElementById('teks_masa_tamat');
     const banner = document.getElementById('banner_countdown');
+    const badgeKategori = document.getElementById('badge_kategori');
     
     if (kontenaPemasa) kontenaPemasa.classList.add('hidden');
+    
     if (teksTamat) {
         teksTamat.textContent = teksPesanan;
         teksTamat.classList.remove('hidden');
+    }
+    
+    // Sembunyikan lencana kategori jika sistem dah tamat
+    if (badgeKategori && !isTerbukaSelamanya) {
+        badgeKategori.classList.add('hidden');
     }
     
     if (!isTerbukaSelamanya && banner) {
