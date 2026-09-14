@@ -184,7 +184,7 @@ function mulaPemasaSwal() {
     // Semakan Segera 1: Jika admin set "Tutup Semua Sistem" secara mutlak
     if (appState.isSistemTutupKecemasan) {
         appState.isMasaTamat = true;
-        setModTamatSwal("PENDAFTARAN & PENGHANTARAN TELAH DITUTUP");
+        setModTamatSwal("PENDAFTARAN PASUKAN DITUTUP"); // Diubah untuk jelaskan hanya pasukan
         return;
     }
 
@@ -254,7 +254,8 @@ function mulaPemasaSwal() {
             if (liveKontena) liveKontena.classList.add('hidden');
             if (liveBadge) liveBadge.classList.add('hidden');
             if (liveTeksTamat) {
-                liveTeksTamat.textContent = "PENDAFTARAN & PENGHANTARAN TELAH DITUTUP";
+                // Teks diubah supaya jelas hanya pasukan ditutup
+                liveTeksTamat.textContent = "PENDAFTARAN PASUKAN DITUTUP";
                 liveTeksTamat.classList.remove('hidden');
                 liveTeksTamat.classList.remove('text-xl', 'mb-4'); // reset classes if modified in phase 1
             }
@@ -535,30 +536,16 @@ const app = {
             }
         }
 
-        // Tapis kategori jika admin menetapkan kekangan kategori dalam DB
-        let isKategoriValid = false;
+        // Tapis kategori: DIBUANG untuk Guru (Membenarkan semua kategori sentiasa ada dalam senarai pilihan guru)
         categories.forEach(cat => {
-            if (appState.kategoriDibuka === "Semua" || appState.kategoriDibuka === cat) {
-                const opt = document.createElement('option');
-                opt.value = cat;
-                opt.textContent = cat;
-                selectKategori.appendChild(opt);
-                isKategoriValid = true;
-            }
+            const opt = document.createElement('option');
+            opt.value = cat;
+            opt.textContent = cat;
+            selectKategori.appendChild(opt);
         });
-
-        if (!isKategoriValid) {
-            Swal.fire({
-                title: 'Pendaftaran Ditutup',
-                text: 'Maaf, pendaftaran untuk kategori sekolah anda tidak dibuka pada masa ini.',
-                icon: 'warning',
-                confirmButtonColor: '#3085d6'
-            }).then(() => {
-                document.getElementById('btn_back_to_sekolah_dari_guru').click();
-            });
-            return;
-        }
-
+        
+        // Buang sekatan isKategoriValid
+        
         document.getElementById('tajuk_borang_guru').textContent = `Langkah 2: Maklumat Guru Pembimbing`;
         
         showLoading("Menyemak rekod guru berdaftar...");
@@ -685,13 +672,9 @@ const app = {
             Swal.fire('Maklumat', 'Anda telah didaftarkan sebelum ini. Membuka dashboard pengurusan pasukan anda...', 'info');
             app.bukaDashboard();
         } else {
-            // Halangan pendaftaran guru jika sistem ditutup atau belum mula
-            if (appState.isMasaTamat || appState.isBelumMula || appState.isSistemTutupKecemasan) {
-                hideLoading();
-                Swal.fire('Pendaftaran Ditutup', 'Pendaftaran guru pembimbing baharu tidak dibenarkan di luar tempoh yang ditetapkan.', 'warning');
-                return;
-            }
-
+            // Halangan pendaftaran guru berdasarkan polisi masa TELAH DIBUANG
+            // Guru sentiasa boleh mendaftar
+            
             const guruData = {
                 sekolah_id: appState.sekolah.id,
                 nama: nama,
@@ -758,7 +741,8 @@ const app = {
         const ytLink = document.getElementById('link_youtube');
         const gemBtn = document.getElementById('btn_gem');
 
-        ytLink.href = YOUTUBE_ANIMASI;
+        // Note: YOUTUBE_ANIMASI needs to be defined somewhere, assuming it's a global constant or fetched
+        // ytLink.href = YOUTUBE_ANIMASI;
         gemBtn.classList.remove('hidden');
 
         await app.loadPasukanList();
@@ -775,7 +759,7 @@ const app = {
             
             const btnTambah = document.getElementById('btn_tambah_pasukan');
             
-            // Penentuan sama ada aktiviti pasukan dikunci
+            // Penentuan sama ada aktiviti pasukan dikunci (Logic kekal untuk kawalan Pasukan)
             const isSistemDikunci = appState.isMasaTamat || appState.isBelumMula || appState.isSistemTutupKecemasan || (appState.kategoriDibuka !== "Semua" && appState.kategoriDibuka !== appState.guru.kategori_pertandingan);
 
             if (isSistemDikunci) {
@@ -797,12 +781,8 @@ const app = {
             }
 
             const containerSijilKehadiran = document.getElementById('container_sijil_kehadiran');
-            // Papar butang sijil kehadiran jika mereka mendaftar sekurang-kurangnya satu pasukan
-            if (appState.pasukanList.length === 0) {
-                containerSijilKehadiran.classList.remove('hidden');
-            } else {
-                containerSijilKehadiran.classList.add('hidden');
-            }
+            // Sijil kehadiran guru sentiasa dipaparkan tanpa mengira jumlah pasukan
+            containerSijilKehadiran.classList.remove('hidden');
 
             app.renderPasukanList();
         } else {
