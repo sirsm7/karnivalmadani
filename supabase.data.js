@@ -36,7 +36,7 @@ const db = {
         }
     },
 
-    // 3. Semak Guru (Jika guru telah daftar untuk sekolah dan pertandingan tertentu) [TIDAK DIGUNAKAN LAGI UNTUK LOGIN BARU, DIKEKALKAN UNTUK KESESUAIAN]
+    // 3. Semak Guru (Jika guru telah daftar untuk sekolah dan pertandingan tertentu)
     async semakGuruExist(sekolah_id, nokp, pertandingan) {
         try {
             const { data, error } = await supabaseClient
@@ -104,9 +104,9 @@ const db = {
                 p_murid1_nama: murid1.nama,
                 p_murid1_nokp: murid1.nokp,
                 p_murid1_emel: murid1.emel,
-                p_murid2_nama: murid2.nama,
-                p_murid2_nokp: murid2.nokp,
-                p_murid2_emel: murid2.emel
+                p_murid2_nama: murid2 ? murid2.nama : null,
+                p_murid2_nokp: murid2 ? murid2.nokp : null,
+                p_murid2_emel: murid2 ? murid2.emel : null
             });
             
             if (error) throw error;
@@ -231,7 +231,6 @@ const db = {
             });
             
             if (error) throw error;
-            // RPC mengembalikan array dengan satu objek, jadi kita ambil index 0
             return { success: true, data: data[0] };
         } catch (error) {
             console.error("Ralat getStatistikPendaftaran:", error);
@@ -269,7 +268,7 @@ const db = {
         }
     },
 
-    // 13. Dapatkan Tetapan Sistem
+    // 13. Dapatkan Tetapan Sistem Individu (Telah dikemaskini untuk menyokong format TEXT)
     async getTetapanSistem(setting_key) {
         try {
             const { data, error } = await supabaseClient
@@ -279,26 +278,64 @@ const db = {
                 .maybeSingle();
             
             if (error) throw error;
-            // Kembalikan nilai boolean, lalai kepada false jika tiada rekod dijumpai
-            return { success: true, value: data ? data.setting_value : false };
+            return { success: true, value: data ? data.setting_value : null };
         } catch (error) {
             console.error("Ralat getTetapanSistem:", error);
             return { success: false, error: error.message };
         }
     },
 
-    // 14. Kemaskini Tetapan Sistem (Digunakan oleh Admin)
+    // 14. Kemaskini Tetapan Sistem Individu (Telah dikemaskini menyokong format TEXT)
     async kemaskiniTetapanSistem(setting_key, setting_value) {
         try {
             const { error } = await supabaseClient
                 .from('karnival_settings')
-                .update({ setting_value: setting_value, updated_at: new Date().toISOString() })
+                .update({ setting_value: String(setting_value), updated_at: new Date().toISOString() })
                 .eq('setting_key', setting_key);
             
             if (error) throw error;
             return { success: true };
         } catch (error) {
             console.error("Ralat kemaskiniTetapanSistem:", error);
+            return { success: false, error: error.message };
+        }
+    },
+
+    // 15. Dapatkan Semua Tetapan Sistem (Pukal) - FUNGSI BAHARU
+    async getSemuaTetapan() {
+        try {
+            const { data, error } = await supabaseClient
+                .from('karnival_settings')
+                .select('setting_key, setting_value');
+            
+            if (error) throw error;
+            
+            // Tukar susunan array kepada format objek kekunci-nilai (key-value)
+            const settingsObj = {};
+            if (data) {
+                data.forEach(item => {
+                    settingsObj[item.setting_key] = item.setting_value;
+                });
+            }
+            return { success: true, data: settingsObj };
+        } catch (error) {
+            console.error("Ralat getSemuaTetapan:", error);
+            return { success: false, error: error.message };
+        }
+    },
+
+    // 16. Kemaskini Banyak Tetapan (Pukal Upsert) - FUNGSI BAHARU
+    async kemaskiniBanyakTetapan(settingsArray) {
+        try {
+            // format jangkaan: [{ setting_key: 'kunci', setting_value: 'nilai', updated_at: '...' }]
+            const { error } = await supabaseClient
+                .from('karnival_settings')
+                .upsert(settingsArray, { onConflict: 'setting_key' });
+            
+            if (error) throw error;
+            return { success: true };
+        } catch (error) {
+            console.error("Ralat kemaskiniBanyakTetapan:", error);
             return { success: false, error: error.message };
         }
     }

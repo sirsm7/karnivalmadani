@@ -24,11 +24,14 @@
 <body class="bg-gray-100 min-h-screen font-sans text-gray-800">
     <div class="max-w-4xl mx-auto px-4 py-8">
         <header class="bg-white shadow-md rounded-lg p-6 mb-8 text-center relative">
-            <div id="banner_countdown" class="bg-gradient-to-r from-red-600 to-orange-500 text-white p-3 rounded-lg mb-6 shadow-sm border border-red-700">
-                <!-- Teks ini ditukar daripada PENYERTAAN kepada PENGHANTARAN VIDEO -->
-                <div id="teks_masa_tamat" class="hidden text-xl font-black uppercase tracking-wider py-2">PENGHANTARAN VIDEO TELAH DITUTUP</div>
+            <div id="banner_countdown" class="bg-gradient-to-r from-red-600 to-orange-500 text-white p-3 rounded-lg mb-6 shadow-sm border border-red-700 transition-colors duration-500">
+                <!-- Pemapar Mesej Pusat (Contoh: "SISTEM TELAH DITUTUP") -->
+                <div id="teks_masa_tamat" class="hidden text-xl font-black uppercase tracking-wider py-2">MEMUATKAN STATUS...</div>
+                
+                <!-- Pemapar Countdown Asas -->
                 <div id="kontena_pemasa">
-                    <p class="text-sm font-bold mb-1 opacity-90 uppercase tracking-wide">Tarikh Tutup Penyertaan & Penghantaran</p>
+                    <!-- id="tajuk_tarikh_pemasa" dikawal oleh app.js (Mula vs Tamat) -->
+                    <p id="tajuk_tarikh_pemasa" class="text-sm font-bold mb-1 opacity-90 uppercase tracking-wide">Menyemak Masa Pelayan...</p>
                     
                     <div class="flex justify-center items-center gap-2 md:gap-4 text-center">
                         <div class="bg-white/20 rounded px-2 md:px-3 py-1 min-w-[60px]"><span id="cd_hari" class="block text-2xl md:text-3xl font-black">00</span><span class="text-[10px] md:text-xs font-semibold">HARI</span></div>
@@ -39,7 +42,6 @@
                         <span class="text-2xl font-bold opacity-70">:</span>
                         <div class="bg-white/20 rounded px-2 md:px-3 py-1 min-w-[60px]"><span id="cd_saat" class="block text-2xl md:text-3xl font-black">00</span><span class="text-[10px] md:text-xs font-semibold">SAAT</span></div>
                     </div>
-                    <p class="text-[10px] mt-1.5 opacity-80 font-medium">9 September 2026, 9:00 Pagi</p>
                 </div>
             </div>
 
@@ -50,18 +52,18 @@
         
         <main id="app_container" class="bg-white shadow-md rounded-lg p-6">
             <section id="view_pilih_sekolah">
-				<div class="grid grid-cols-2 gap-4 mb-8">
-					<div onclick="app.paparSenaraiSekolahStat()" class="bg-blue-50 border border-blue-200 rounded-lg p-4 text-center shadow-sm cursor-pointer hover:bg-blue-100 hover:shadow-md transition">
-						<h3 class="text-sm font-bold text-blue-800 mb-1">JUMLAH SEKOLAH</h3>
-						<div class="text-3xl font-black text-blue-600" id="stat_sekolah">-</div>
-						<p class="text-xs text-gray-500 mt-1">Telah Mendaftar (Klik)</p>
-					</div>
-					<div onclick="app.paparSenaraiPasukanStat()" class="bg-green-50 border border-green-200 rounded-lg p-4 text-center shadow-sm cursor-pointer hover:bg-green-100 hover:shadow-md transition">
-						<h3 class="text-sm font-bold text-green-800 mb-1">JUMLAH PASUKAN</h3>
-						<div class="text-3xl font-black text-green-600" id="stat_pasukan">-</div>
-						<p class="text-xs text-gray-500 mt-1">Telah Didaftarkan (Klik)</p>
-					</div>
-				</div>
+                <div class="grid grid-cols-2 gap-4 mb-8">
+                    <div onclick="app.paparSenaraiSekolahStat()" class="bg-blue-50 border border-blue-200 rounded-lg p-4 text-center shadow-sm cursor-pointer hover:bg-blue-100 hover:shadow-md transition">
+                        <h3 class="text-sm font-bold text-blue-800 mb-1">JUMLAH SEKOLAH</h3>
+                        <div class="text-3xl font-black text-blue-600" id="stat_sekolah">-</div>
+                        <p class="text-xs text-gray-500 mt-1">Telah Mendaftar (Klik)</p>
+                    </div>
+                    <div onclick="app.paparSenaraiPasukanStat()" class="bg-green-50 border border-green-200 rounded-lg p-4 text-center shadow-sm cursor-pointer hover:bg-green-100 hover:shadow-md transition">
+                        <h3 class="text-sm font-bold text-green-800 mb-1">JUMLAH PASUKAN</h3>
+                        <div class="text-3xl font-black text-green-600" id="stat_pasukan">-</div>
+                        <p class="text-xs text-gray-500 mt-1">Telah Didaftarkan (Klik)</p>
+                    </div>
+                </div>
                 
                 <h2 class="text-xl font-bold border-b pb-2 mb-4">Langkah 1: Pilih Sekolah</h2>
                 <div class="mb-4 relative">

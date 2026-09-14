@@ -18,9 +18,14 @@ const appState = {
     imgBorderBase64: null, // Added cache for border image
     fontGreatVibesBase64: null, // Cache untuk font
 
-    // Status Penutupan Sistem Berasingan
-    isMasaTamat: false,     // True jika timer tamat
-    isManualTutup: false    // True jika admin tutup manual di DB
+    // Status Penutupan Sistem Baharu Berdasarkan DB
+    tarikhMula: null,
+    tarikhTamat: null,
+    kategoriDibuka: "Semua", // Lalai buka semua
+    
+    isSistemTutupKecemasan: false, // Legacy fallback jika setting lama masih true
+    isMasaTamat: false,
+    isBelumMula: false
 };
 
 // --- DOM ELEMENTS ---
@@ -36,84 +41,36 @@ const dropdownSekolah = document.getElementById('dropdown_sekolah');
 
 // --- INIT ---
 document.addEventListener("DOMContentLoaded", async () => {
-    initApp();
-    mulaPemasa();
+    await initApp();
     preloadImagesForPDF();
     preloadFontForPDF(); // Panggil fungsi muat turun font
 });
 
-function mulaPemasa() {
-    // Tarikh tamat ditetapkan pada 9 Sept 2026 09:00 pagi
-    const tarikhTutup = new Date("2026-09-09T09:00:00+08:00").getTime();
-    let hasTriggeredTamat = false; // Flag untuk kemaskini UI sekali
-    
-    const x = setInterval(function() {
-        const sekarang = new Date().getTime();
-        const baki = tarikhTutup - sekarang;
-        
-        if (baki < 0) {
-            clearInterval(x);
-            appState.isMasaTamat = true;
-            
-            // Kemas kini UI UI Timer di Index.html
-            const kontenaPemasa = document.getElementById('kontena_pemasa');
-            const teksTamat = document.getElementById('teks_masa_tamat');
-            const banner = document.getElementById('banner_countdown');
-            
-            if (kontenaPemasa) kontenaPemasa.classList.add('hidden');
-            if (teksTamat) {
-                teksTamat.textContent = "PENDAFTARAN PASUKAN & VIDEO TELAH DITUTUP";
-                teksTamat.classList.remove('hidden');
-            }
-            if (banner) {
-                banner.classList.remove('from-red-600', 'to-orange-500');
-                banner.classList.add('bg-gray-800', 'text-white');
-            }
-
-            // Kemas kini UI jika guru sedang berada di dashboard (Tutup ruang input video sahaja)
-            if (!hasTriggeredTamat && appState.guru && document.getElementById('view_dashboard_guru').classList.contains('hidden') === false) {
-                // Panggil semula logik render untuk mengunci UI berkaitan pasukan
-                app.loadPasukanList();
-            }
-            hasTriggeredTamat = true;
-            
-        } else {
-            // Pengiraan pecahan masa
-            const hari = Math.floor(baki / (1000 * 60 * 60 * 24));
-            const jam = Math.floor((baki % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
-            const minit = Math.floor((baki % (1000 * 60 * 60)) / (1000 * 60));
-            const saat = Math.floor((baki % (1000 * 60)) / 1000);
-            
-            // Kemas kini DOM
-            const elHari = document.getElementById('cd_hari');
-            const elJam = document.getElementById('cd_jam');
-            const elMinit = document.getElementById('cd_minit');
-            const elSaat = document.getElementById('cd_saat');
-            
-            if (elHari) elHari.textContent = hari < 10 ? "0" + hari : hari;
-            if (elJam) elJam.textContent = jam < 10 ? "0" + jam : jam;
-            if (elMinit) elMinit.textContent = minit < 10 ? "0" + minit : minit;
-            if (elSaat) elSaat.textContent = saat < 10 ? "0" + saat : saat;
-        }
-    }, 1000);
-}
-
 async function initApp() {
     showLoading("Memuatkan data...");
     
-    // Muatkan statistik, senarai sekolah dan tetapan admin serentak (Parallel)
+    // Muatkan statistik, senarai sekolah dan SEMUA tetapan admin serentak (Parallel)
     const [sekolahRes, statistikRes, settingRes] = await Promise.all([
         window.db.getSenaraiSekolah(),
         window.db.getStatistikPendaftaran('Animasi AI'),
-        window.db.getTetapanSistem('video_submission_closed')
+        window.db.getSemuaTetapan()
     ]);
     
     hideLoading();
 
     // Simpan status tetapan admin
-    if (settingRes && settingRes.success) {
-        appState.isManualTutup = settingRes.value;
+    if (settingRes && settingRes.success && settingRes.data) {
+        const d = settingRes.data;
+        appState.tarikhMula = d.tarikh_mula ? new Date(d.tarikh_mula).getTime() : null;
+        appState.tarikhTamat = d.tarikh_tamat ? new Date(d.tarikh_tamat).getTime() : null;
+        appState.kategoriDibuka = d.kategori_dibuka || "Semua";
+        
+        // Master switch kecemasan (Legacy support jika ada)
+        appState.isSistemTutupKecemasan = (d.kategori_dibuka === "Tutup") || (d.video_submission_closed === 'true');
     }
+
+    // Mulakan pemasa berdasarkan tarikh yang ditarik
+    mulaPemasa();
 
     // Proses data sekolah
     if (sekolahRes.success) {
@@ -123,12 +80,125 @@ async function initApp() {
         Swal.fire('Ralat', 'Gagal memuat turun maklumat sekolah. Sila muat semula halaman.', 'error');
     }
     
-    // Kemas kini UI Statistik (Jika elemen stat ada)
+    // Kemas kini UI Statistik
     if (statistikRes.success && statistikRes.data) {
         const elSekolah = document.getElementById('stat_sekolah');
         const elPasukan = document.getElementById('stat_pasukan');
         if (elSekolah) elSekolah.textContent = statistikRes.data.jumlah_sekolah || 0;
         if (elPasukan) elPasukan.textContent = statistikRes.data.jumlah_pasukan || 0;
+    }
+}
+
+function mulaPemasa() {
+    // Jika admin set "Tutup Semua Sistem" secara mutlak
+    if (appState.isSistemTutupKecemasan) {
+        appState.isMasaTamat = true;
+        kemaskiniUITamat("PENDAFTARAN & PENGHANTARAN TELAH DITUTUP");
+        return;
+    }
+
+    // Jika tiada tarikh diset, kita anggap sistem sentiasa buka (fallback selamat)
+    if (!appState.tarikhMula || !appState.tarikhTamat) {
+        kemaskiniUITamat("SISTEM DIBUKA (TIADA HAD MASA DISET)", true);
+        return;
+    }
+
+    let hasTriggeredEvent = false; 
+    
+    const x = setInterval(function() {
+        const sekarang = new Date().getTime();
+        
+        // Semak fasa masa
+        if (sekarang < appState.tarikhMula) {
+            // Fasa 1: Belum Mula (Tunjuk timer ke arah Tarikh Mula)
+            appState.isBelumMula = true;
+            appState.isMasaTamat = false;
+            
+            const bakiMula = appState.tarikhMula - sekarang;
+            paparKiraanMasa(bakiMula);
+            
+            // Set Tajuk Banner
+            const teksTamat = document.getElementById('teks_masa_tamat');
+            if (teksTamat && teksTamat.textContent !== "SISTEM AKAN DIBUKA DALAM MASA") {
+                teksTamat.textContent = "SISTEM AKAN DIBUKA DALAM MASA";
+                teksTamat.classList.remove('hidden');
+                
+                const tajukTarikh = document.getElementById('tajuk_tarikh_pemasa');
+                if(tajukTarikh) tajukTarikh.textContent = "Masa Sebelum Pendaftaran Dibuka";
+            }
+            
+            // Kunci UI jika berada dalam dashboard
+            if (!hasTriggeredEvent && appState.guru && !document.getElementById('view_dashboard_guru').classList.contains('hidden')) {
+                app.loadPasukanList();
+                hasTriggeredEvent = true;
+            }
+            
+        } else if (sekarang >= appState.tarikhMula && sekarang <= appState.tarikhTamat) {
+            // Fasa 2: Sedang Berlangsung (Tunjuk timer ke arah Tarikh Tamat)
+            appState.isBelumMula = false;
+            appState.isMasaTamat = false;
+            hasTriggeredEvent = false; // Reset trigger supaya boleh kunci balik jika tamat kelak
+            
+            const bakiTamat = appState.tarikhTamat - sekarang;
+            paparKiraanMasa(bakiTamat);
+            
+            // Set Tajuk Banner
+            const teksTamat = document.getElementById('teks_masa_tamat');
+            if (teksTamat && !teksTamat.classList.contains('hidden')) {
+                teksTamat.classList.add('hidden'); // Sembunyikan teks besar sebab nak tunjuk timer biasa
+                
+                const tajukTarikh = document.getElementById('tajuk_tarikh_pemasa');
+                if(tajukTarikh) tajukTarikh.textContent = "Tarikh Tutup Pendaftaran & Penghantaran";
+            }
+            
+        } else {
+            // Fasa 3: Telah Tamat
+            clearInterval(x);
+            appState.isBelumMula = false;
+            appState.isMasaTamat = true;
+            
+            kemaskiniUITamat("PENDAFTARAN & PENGHANTARAN TELAH DITUTUP");
+
+            // Kemas kini UI jika guru sedang berada di dashboard
+            if (!hasTriggeredEvent && appState.guru && !document.getElementById('view_dashboard_guru').classList.contains('hidden')) {
+                app.loadPasukanList();
+                hasTriggeredEvent = true;
+            }
+        }
+    }, 1000);
+}
+
+function paparKiraanMasa(baki) {
+    const hari = Math.floor(baki / (1000 * 60 * 60 * 24));
+    const jam = Math.floor((baki % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+    const minit = Math.floor((baki % (1000 * 60 * 60)) / (1000 * 60));
+    const saat = Math.floor((baki % (1000 * 60)) / 1000);
+    
+    const elHari = document.getElementById('cd_hari');
+    const elJam = document.getElementById('cd_jam');
+    const elMinit = document.getElementById('cd_minit');
+    const elSaat = document.getElementById('cd_saat');
+    
+    if (elHari) elHari.textContent = hari < 10 ? "0" + hari : hari;
+    if (elJam) elJam.textContent = jam < 10 ? "0" + jam : jam;
+    if (elMinit) elMinit.textContent = minit < 10 ? "0" + minit : minit;
+    if (elSaat) elSaat.textContent = saat < 10 ? "0" + saat : saat;
+}
+
+function kemaskiniUITamat(teksPesanan, isTerbukaSelamanya = false) {
+    const kontenaPemasa = document.getElementById('kontena_pemasa');
+    const teksTamat = document.getElementById('teks_masa_tamat');
+    const banner = document.getElementById('banner_countdown');
+    
+    if (kontenaPemasa) kontenaPemasa.classList.add('hidden');
+    if (teksTamat) {
+        teksTamat.textContent = teksPesanan;
+        teksTamat.classList.remove('hidden');
+    }
+    
+    if (!isTerbukaSelamanya && banner) {
+        banner.classList.remove('from-red-600', 'to-orange-500');
+        banner.classList.add('bg-gray-800', 'text-white');
     }
 }
 
@@ -379,12 +449,29 @@ const app = {
             }
         }
 
+        // Tapis kategori jika admin menetapkan kekangan kategori dalam DB
+        let isKategoriValid = false;
         categories.forEach(cat => {
-            const opt = document.createElement('option');
-            opt.value = cat;
-            opt.textContent = cat;
-            selectKategori.appendChild(opt);
+            if (appState.kategoriDibuka === "Semua" || appState.kategoriDibuka === cat) {
+                const opt = document.createElement('option');
+                opt.value = cat;
+                opt.textContent = cat;
+                selectKategori.appendChild(opt);
+                isKategoriValid = true;
+            }
         });
+
+        if (!isKategoriValid) {
+            Swal.fire({
+                title: 'Pendaftaran Ditutup',
+                text: 'Maaf, pendaftaran untuk kategori sekolah anda tidak dibuka pada masa ini.',
+                icon: 'warning',
+                confirmButtonColor: '#3085d6'
+            }).then(() => {
+                document.getElementById('btn_back_to_sekolah_dari_guru').click();
+            });
+            return;
+        }
 
         document.getElementById('tajuk_borang_guru').textContent = `Langkah 2: Maklumat Guru Pembimbing`;
         
@@ -491,8 +578,6 @@ const app = {
     simpanGuru: async (e) => {
         e.preventDefault();
         
-        // Pendaftaran profil guru sentiasa dibenarkan walaupun sistem ditutup
-
         const nama = document.getElementById('guru_nama').value.trim().toUpperCase();
         const nokp = document.getElementById('guru_nokp').value.trim();
         const notel = document.getElementById('guru_notel').value.trim();
@@ -514,6 +599,13 @@ const app = {
             Swal.fire('Maklumat', 'Anda telah didaftarkan sebelum ini. Membuka dashboard pengurusan pasukan anda...', 'info');
             app.bukaDashboard();
         } else {
+            // Halangan pendaftaran guru jika sistem ditutup atau belum mula
+            if (appState.isMasaTamat || appState.isBelumMula || appState.isSistemTutupKecemasan) {
+                hideLoading();
+                Swal.fire('Pendaftaran Ditutup', 'Pendaftaran guru pembimbing baharu tidak dibenarkan di luar tempoh yang ditetapkan.', 'warning');
+                return;
+            }
+
             const guruData = {
                 sekolah_id: appState.sekolah.id,
                 nama: nama,
@@ -597,12 +689,17 @@ const app = {
             
             const btnTambah = document.getElementById('btn_tambah_pasukan');
             
-            const isSistemTutup = appState.isMasaTamat || appState.isManualTutup;
+            // Penentuan sama ada aktiviti pasukan dikunci
+            const isSistemDikunci = appState.isMasaTamat || appState.isBelumMula || appState.isSistemTutupKecemasan || (appState.kategoriDibuka !== "Semua" && appState.kategoriDibuka !== appState.guru.kategori_pertandingan);
 
-            if (isSistemTutup) {
+            if (isSistemDikunci) {
                 btnTambah.disabled = true;
                 btnTambah.classList.replace('bg-blue-600', 'bg-gray-400');
-                btnTambah.textContent = "Pendaftaran Pasukan Ditutup";
+                if (appState.isBelumMula) {
+                     btnTambah.textContent = "Sistem Belum Dibuka";
+                } else {
+                     btnTambah.textContent = "Sistem Telah Ditutup";
+                }
             } else if (appState.pasukanList.length >= 10) {
                 btnTambah.disabled = true;
                 btnTambah.classList.replace('bg-blue-600', 'bg-gray-400');
@@ -628,8 +725,10 @@ const app = {
     },
 
     bukaBorangPasukan: () => {
-        if (appState.isMasaTamat || appState.isManualTutup) {
-            Swal.fire('Ditutup', 'Pendaftaran pasukan telah ditutup.', 'warning');
+        const isSistemDikunci = appState.isMasaTamat || appState.isBelumMula || appState.isSistemTutupKecemasan || (appState.kategoriDibuka !== "Semua" && appState.kategoriDibuka !== appState.guru.kategori_pertandingan);
+
+        if (isSistemDikunci) {
+            Swal.fire('Sistem Dikunci', 'Penambahan pasukan tidak dibenarkan pada masa ini.', 'warning');
             return;
         }
 
@@ -650,8 +749,10 @@ const app = {
     simpanPasukan: async (e) => {
         e.preventDefault();
         
-        if (appState.isMasaTamat || appState.isManualTutup) {
-            Swal.fire('Ditutup', 'Pendaftaran pasukan telah ditutup.', 'warning');
+        const isSistemDikunci = appState.isMasaTamat || appState.isBelumMula || appState.isSistemTutupKecemasan || (appState.kategoriDibuka !== "Semua" && appState.kategoriDibuka !== appState.guru.kategori_pertandingan);
+
+        if (isSistemDikunci) {
+            Swal.fire('Sistem Dikunci', 'Penambahan pasukan tidak dibenarkan pada masa ini.', 'warning');
             return;
         }
 
@@ -694,8 +795,10 @@ const app = {
     },
     
     bukaBorangKemaskini: (pasukan_id) => {
-        if (appState.isMasaTamat || appState.isManualTutup) {
-            Swal.fire('Ditutup', 'Pengubahsuaian pasukan telah ditutup.', 'warning');
+        const isSistemDikunci = appState.isMasaTamat || appState.isBelumMula || appState.isSistemTutupKecemasan || (appState.kategoriDibuka !== "Semua" && appState.kategoriDibuka !== appState.guru.kategori_pertandingan);
+
+        if (isSistemDikunci) {
+            Swal.fire('Sistem Dikunci', 'Pengubahsuaian pasukan tidak dibenarkan pada masa ini.', 'warning');
             return;
         }
 
@@ -739,8 +842,10 @@ const app = {
     simpanKemaskiniPasukan: async (e) => {
         e.preventDefault();
         
-        if (appState.isMasaTamat || appState.isManualTutup) {
-            Swal.fire('Ditutup', 'Pengubahsuaian pasukan telah ditutup.', 'warning');
+        const isSistemDikunci = appState.isMasaTamat || appState.isBelumMula || appState.isSistemTutupKecemasan || (appState.kategoriDibuka !== "Semua" && appState.kategoriDibuka !== appState.guru.kategori_pertandingan);
+
+        if (isSistemDikunci) {
+            Swal.fire('Sistem Dikunci', 'Pengubahsuaian pasukan tidak dibenarkan pada masa ini.', 'warning');
             return;
         }
 
@@ -790,8 +895,10 @@ const app = {
     },
 
     mintaPadamPasukan: async (pasukan_id) => {
-        if (appState.isMasaTamat || appState.isManualTutup) {
-            Swal.fire('Ditutup', 'Pemadaman pasukan tidak lagi dibenarkan.', 'warning');
+        const isSistemDikunci = appState.isMasaTamat || appState.isBelumMula || appState.isSistemTutupKecemasan || (appState.kategoriDibuka !== "Semua" && appState.kategoriDibuka !== appState.guru.kategori_pertandingan);
+
+        if (isSistemDikunci) {
+            Swal.fire('Sistem Dikunci', 'Pemadaman pasukan tidak dibenarkan pada masa ini.', 'warning');
             return;
         }
 
@@ -829,7 +936,7 @@ const app = {
             return;
         }
 
-        const isSistemTutup = appState.isMasaTamat || appState.isManualTutup;
+        const isSistemDikunci = appState.isMasaTamat || appState.isBelumMula || appState.isSistemTutupKecemasan || (appState.kategoriDibuka !== "Semua" && appState.kategoriDibuka !== appState.guru.kategori_pertandingan);
 
         appState.pasukanList.forEach((pasukan, index) => {
             const isDisahkan = pasukan.disahkan;
@@ -839,21 +946,21 @@ const app = {
 
             // Butang Edit dan Padam dikunci jika sistem ditutup
             let editDeleteUI = '';
-            if (!isDisahkan && !isSistemTutup) {
+            if (!isDisahkan && !isSistemDikunci) {
                 editDeleteUI = `
                     <div class="flex gap-2">
                         <button onclick="app.bukaBorangKemaskini('${pasukan.id}')" class="text-sm bg-yellow-500 hover:bg-yellow-600 text-white px-3 py-1 rounded transition">✏️ Edit</button>
                         <button onclick="app.mintaPadamPasukan('${pasukan.id}')" class="text-sm bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded transition">🗑️ Padam</button>
                     </div>
                 `;
-            } else if (!isDisahkan && isSistemTutup) {
+            } else if (!isDisahkan && isSistemDikunci) {
                  // Hanya tunjuk indikator dikunci jika ditutup dan belum sah
-                 editDeleteUI = `<span class="text-xs text-gray-400 font-semibold italic">Dikunci</span>`;
+                 editDeleteUI = `<span class="text-xs text-gray-400 font-semibold italic">Dikunci Oleh Sistem</span>`;
             }
 
             const currentLink = pasukan.pautan_hasil || '';
-            const isVideoClosed = isSistemTutup;
-            let statusTutupTeks = isVideoClosed ? '<span class="text-xs text-red-500 font-bold ml-2">(Ditutup)</span>' : '';
+            const isVideoClosed = isSistemDikunci;
+            let statusTutupTeks = isVideoClosed ? '<span class="text-xs text-red-500 font-bold ml-2">(Dikunci)</span>' : '';
 
             // Bahagian Video dikunci berdasarkan isVideoClosed
             const actionUI = `
@@ -903,8 +1010,10 @@ const app = {
     },
 
     simpanLinkAnimasi: async (pasukan_id) => {
-        if (appState.isMasaTamat || appState.isManualTutup) {
-            Swal.fire('Ditutup', 'Penghantaran dan kemaskini pautan video telah ditutup.', 'error');
+        const isSistemDikunci = appState.isMasaTamat || appState.isBelumMula || appState.isSistemTutupKecemasan || (appState.kategoriDibuka !== "Semua" && appState.kategoriDibuka !== appState.guru.kategori_pertandingan);
+
+        if (isSistemDikunci) {
+            Swal.fire('Sistem Dikunci', 'Penghantaran dan kemaskini pautan video tidak dibenarkan pada masa ini.', 'error');
             return;
         }
         
@@ -1018,6 +1127,7 @@ const app = {
                 doc.text(splitDesc, lebarA4/2, nextY, { align: "center" });
                 
                 nextY += 8;
+                // Text Tarikh dalam sijil tidak terikat dengan tempoh sistem (biasanya tarikh statik pertandingan)
                 const teksTarikh = "25 Ogos 2026 hingga 15 September 2026";
 
                 doc.setFont("helvetica", "bold");
@@ -1198,7 +1308,6 @@ const app = {
     }
 };
 
-// --- UTILS ---
 function showLoading(text) {
     loadingText.textContent = text;
     loadingOverlay.classList.remove('hidden');
