@@ -741,8 +741,8 @@ const app = {
         const ytLink = document.getElementById('link_youtube');
         const gemBtn = document.getElementById('btn_gem');
 
-        // Note: YOUTUBE_ANIMASI needs to be defined somewhere, assuming it's a global constant or fetched
-        // ytLink.href = YOUTUBE_ANIMASI;
+        // Kemaskini untuk menggunakan URL YouTube yang diberikan
+        ytLink.href = "https://www.youtube.com/live/9nYyPLaQ9Pc?si=9rVPkOepsqiOs0AF";
         gemBtn.classList.remove('hidden');
 
         await app.loadPasukanList();
@@ -1335,7 +1335,8 @@ const app = {
             doc.text(splitDesc, lebarA4/2, nextY, { align: "center" });
             
             nextY += 8;
-            const teksTarikh = "25 September 2026";
+            // Kemaskini tarikh sijil kehadiran mengikut permintaan pengguna
+            const teksTarikh = "25 Ogos 2026";
 
             doc.setFont("helvetica", "bold");
             doc.setFontSize(11);
