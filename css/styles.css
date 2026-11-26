@@ -1,0 +1,74 @@
+.hidden {
+    display: none !important;
+}
+
+body {
+    min-height: 100dvh;
+}
+
+input,
+select {
+    text-transform: uppercase;
+}
+
+input[type="email"],
+input[type="password"],
+input[type="url"],
+input[type="number"],
+input[type="datetime-local"],
+input[type="file"],
+input[id="guru_emel"],
+input[id="murid1_emel"],
+input[id="murid2_emel"],
+input[id="pautan_hasil"],
+input[id="edit_murid1_emel"],
+input[id="edit_murid2_emel"],
+input[id="pasukan_nama"],
+input[id="edit_pasukan_nama"],
+input[id="admin_pwd"],
+input[id="juri_pwd"] {
+    text-transform: none;
+}
+
+input[id="penilaian_nama_juri"],
+input[id="juri_nama_input"] {
+    text-transform: capitalize;
+}
+
+#dropdown_sekolah::-webkit-scrollbar {
+    width: 8px;
+}
+
+#dropdown_sekolah::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 4px;
+}
+
+#dropdown_sekolah::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 4px;
+}
+
+#dropdown_sekolah::-webkit-scrollbar-thumb:hover {
+    background: #94a3b8;
+}
+
+.swal2-status-popup {
+    padding: 0 !important;
+    overflow: hidden;
+    border-radius: 1rem !important;
+}
+
+.table-responsive-wrap {
+    width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+}
+
+@media (max-width: 640px) {
+    button,
+    select,
+    input:not([type="hidden"]) {
+        min-height: 44px;
+    }
+}
