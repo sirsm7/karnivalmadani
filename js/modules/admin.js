@@ -461,12 +461,10 @@ export const adminApp = {
         await adminApp.mintaPadamGuru(guru_id);
     },
 
-    renderTable() {
-        const fPertandingan = el("filter_pertandingan").value;
-        const fKategori = el("filter_kategori").value;
-        const fStatus = el("filter_status").value;
-        const tbody = el("table_body");
-        tbody.textContent = "";
+    getFilteredPasukanSenarai() {
+        const fPertandingan = el("filter_pertandingan") ? el("filter_pertandingan").value : "Semua";
+        const fKategori = el("filter_kategori") ? el("filter_kategori").value : "Semua";
+        const fStatus = el("filter_status") ? el("filter_status").value : "Semua";
 
         const filtered = adminApp.dataPasukan.filter((item) => {
             const guru = item.karnival_guru;
@@ -477,6 +475,14 @@ export const adminApp = {
             if (fStatus === "Disahkan" && item.disahkan !== true) return false;
             return true;
         });
+
+        return { fPertandingan, fKategori, fStatus, filtered };
+    },
+
+    renderTable() {
+        const { filtered } = adminApp.getFilteredPasukanSenarai();
+        const tbody = el("table_body");
+        tbody.textContent = "";
 
         if (filtered.length === 0) {
             const emptyTr = createNode("tr");
@@ -643,19 +649,7 @@ export const adminApp = {
     },
 
     async salinKeTelegram() {
-        const fPertandingan = el("filter_pertandingan").value;
-        const fKategori = el("filter_kategori").value;
-        const fStatus = el("filter_status").value;
-
-        const filtered = adminApp.dataPasukan.filter((item) => {
-            const guru = item.karnival_guru;
-            if (!guru) return false;
-            if (fPertandingan !== "Semua" && guru.pertandingan !== fPertandingan) return false;
-            if (fKategori !== "Semua" && guru.kategori_pertandingan !== fKategori) return false;
-            if (fStatus === "Menunggu" && item.disahkan !== false) return false;
-            if (fStatus === "Disahkan" && item.disahkan !== true) return false;
-            return true;
-        });
+        const { fPertandingan, fKategori, fStatus, filtered } = adminApp.getFilteredPasukanSenarai();
 
         if (filtered.length === 0) {
             window.Swal.fire("Maklumat", "Tiada rekod untuk disalin berdasarkan tapisan semasa.", "info");
@@ -663,6 +657,7 @@ export const adminApp = {
         }
 
         let teks = `**SENARAI PASUKAN PENDIDIKAN MADANI 2026**\n`;
+        teks += `Pertandingan: **${fPertandingan}**\n`;
         teks += `Kategori: **${fKategori}**\n`;
         teks += `Status: **${fStatus}**\n`;
         teks += `Jumlah: **${filtered.length} Pasukan**\n\n`;
@@ -699,10 +694,29 @@ export const adminApp = {
     },
 
     async salinRumusanTelegram() {
+        const isRankingView = el("paparan_ranking") && !el("paparan_ranking").classList.contains("hidden");
+        let senaraiTapisan = [];
+        let infoTapisan = "";
+
+        if (isRankingView) {
+            const fKategoriRanking = el("filter_kategori_ranking") ? el("filter_kategori_ranking").value : "Semua";
+            senaraiTapisan = adminApp.dataPasukan.filter((p) => {
+                const guru = p.karnival_guru;
+                if (!guru) return false;
+                if (fKategoriRanking !== "Semua" && guru.kategori_pertandingan !== fKategoriRanking) return false;
+                return true;
+            });
+            infoTapisan = `Kategori: **${fKategoriRanking}**\n`;
+        } else {
+            const { fPertandingan, fKategori, fStatus, filtered } = adminApp.getFilteredPasukanSenarai();
+            senaraiTapisan = filtered;
+            infoTapisan = `Pertandingan: **${fPertandingan}**\nKategori: **${fKategori}**\nStatus: **${fStatus}**\n`;
+        }
+
         const kumpulKategori = {};
         let jumlahKeseluruhan = 0;
 
-        adminApp.dataPasukan.forEach((p) => {
+        senaraiTapisan.forEach((p) => {
             const guru = p.karnival_guru;
             if (!guru) return;
             const kat = guru.kategori_pertandingan;
@@ -714,11 +728,12 @@ export const adminApp = {
         });
 
         if (jumlahKeseluruhan === 0) {
-            window.Swal.fire("Maklumat", "Tiada rekod pasukan untuk dirumuskan.", "info");
+            window.Swal.fire("Maklumat", "Tiada rekod pasukan untuk dirumuskan berdasarkan tapisan semasa.", "info");
             return;
         }
 
         let teks = `**Ringkasan Penyertaan Sekolah** 📊\n`;
+        teks += infoTapisan;
         teks += `**Jumlah Keseluruhan Pasukan:** ${jumlahKeseluruhan} 👥\n\n`;
 
         KATEGORI_SUSUNAN_RUMUSAN.forEach((kat) => {
@@ -804,12 +819,18 @@ export const adminApp = {
     },
 
     async salinTop5Telegram() {
+        const fKategori = el("filter_kategori_ranking") ? el("filter_kategori_ranking").value : "Semua";
         const kumpulKategori = adminApp.kiraDataRanking();
-        let teks = `**KEDUDUKAN 5 TERBAIK KESELURUHAN KATEGORI**\n`;
+        const tajukKategori = fKategori === "Semua" ? "KESELURUHAN KATEGORI" : fKategori.toUpperCase();
+        let teks = `**KEDUDUKAN 5 TERBAIK ${tajukKategori}**\n`;
         teks += `Karnival Pendidikan Madani PPD Alor Gajah 2026\n\n`;
 
+        const kategoriDipilih = KATEGORI_SUSUNAN_RANKING.filter(
+            (kat) => fKategori === "Semua" || kat === fKategori
+        );
+
         let adaData = false;
-        KATEGORI_SUSUNAN_RANKING.forEach((kat) => {
+        kategoriDipilih.forEach((kat) => {
             if (kumpulKategori[kat] && kumpulKategori[kat].length > 0) {
                 adaData = true;
                 teks += `**[KATEGORI: ${kat.toUpperCase()}]**\n`;
@@ -833,7 +854,7 @@ export const adminApp = {
         });
 
         if (!adaData) {
-            window.Swal.fire("Maklumat", "Tiada rekod yang mencukupi untuk disalin ke Telegram.", "info");
+            window.Swal.fire("Maklumat", "Tiada rekod yang mencukupi untuk disalin berdasarkan tapisan semasa.", "info");
             return;
         }
 
