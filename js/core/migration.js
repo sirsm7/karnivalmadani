@@ -97,7 +97,7 @@ function renderStatusMessage(statusElement, text, isError = false) {
     }
 }
 
-async function resolveDynamicSchemas(signal) {
+function resolveDynamicSchemas() {
     const resolvedMap = new Map();
     SCHEMA_REGISTRY.forEach((def) => {
         resolvedMap.set(def.table_name, {
@@ -109,46 +109,6 @@ async function resolveDynamicSchemas(signal) {
             optional_headers: [...def.optional_headers]
         });
     });
-
-    try {
-        const env = getEnv();
-        const targetSchema = getTargetSchema();
-        const openApiRes = await fetch(`${env.SUPABASE_URL}/rest/v1/`, {
-            method: "GET",
-            headers: {
-                "apikey": env.SUPABASE_ANON_KEY,
-                "Authorization": `Bearer ${env.SUPABASE_ANON_KEY}`,
-                "Accept": "application/openapi+json",
-                "Accept-Profile": targetSchema
-            },
-            signal
-        });
-
-        if (openApiRes.ok) {
-            const spec = await openApiRes.json();
-            const definitions = (spec && spec.definitions) || (spec && spec.components && spec.components.schemas) || {};
-
-            for (const [tableName, schemaDef] of resolvedMap.entries()) {
-                const apiTable = definitions[tableName];
-                if (apiTable && apiTable.properties) {
-                    const requiredCols = Array.isArray(apiTable.required) ? apiTable.required : [];
-                    const allCols = Object.keys(apiTable.properties);
-
-                    if (requiredCols.length > 0) {
-                        const resolvedRequired = requiredCols.filter((col) => allCols.includes(col));
-                        if (allCols.includes(schemaDef.primary_key) && !resolvedRequired.includes(schemaDef.primary_key)) {
-                            resolvedRequired.unshift(schemaDef.primary_key);
-                        }
-                        schemaDef.headers = resolvedRequired;
-                        schemaDef.optional_headers = allCols.filter((col) => !schemaDef.headers.includes(col));
-                    }
-                }
-            }
-        }
-    } catch (_) {
-        return resolvedMap;
-    }
-
     return resolvedMap;
 }
 
@@ -237,8 +197,11 @@ function validateAndNormalizeImportPayload(parsedJson, schemaMap) {
             const cleanRow = {};
 
             for (const reqCol of expectedSchema.headers) {
-                if (!Object.prototype.hasOwnProperty.call(rawRow, reqCol) || rawRow[reqCol] === null || rawRow[reqCol] === undefined || rawRow[reqCol] === "") {
-                    throw new Error(`Nilai wajib '${reqCol}' kosong pada baris ke-${rowIndex + 1} jadual '${tableName}'.`);
+                if (!Object.prototype.hasOwnProperty.call(rawRow, reqCol) || rawRow[reqCol] === null || rawRow[reqCol] === undefined) {
+                    throw new Error(`Nilai wajib '${reqCol}' tiada atau NULL pada baris ke-${rowIndex + 1} jadual '${tableName}'.`);
+                }
+                if (reqCol === expectedSchema.primary_key && String(rawRow[reqCol]).trim() === "") {
+                    throw new Error(`Kunci utama '${reqCol}' kosong pada baris ke-${rowIndex + 1} jadual '${tableName}'.`);
                 }
                 cleanRow[reqCol] = rawRow[reqCol];
             }
@@ -291,7 +254,7 @@ export async function exportDatabaseJSON(options = {}) {
         const client = getClient();
         renderStatusMessage(statusElement, "Menyemak skema pangkalan data...", false);
 
-        const schemaMap = await resolveDynamicSchemas(signal);
+        const schemaMap = resolveDynamicSchemas();
         const tableOrder = SCHEMA_REGISTRY.map((item) => item.table_name);
         const tablesPayload = {};
 
@@ -397,7 +360,7 @@ export async function importDatabaseJSON(file, options = {}) {
             throw new Error("Sintaks JSON rosak atau tidak boleh dihuraikan.");
         }
 
-        const schemaMap = await resolveDynamicSchemas(signal);
+        const schemaMap = resolveDynamicSchemas();
         const batches = validateAndNormalizeImportPayload(parsedJson, schemaMap);
         let totalUpserted = 0;
 
