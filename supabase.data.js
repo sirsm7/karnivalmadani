@@ -1,28 +1,24 @@
 let supabaseClientInstance = null;
 let initPromise = null;
 
-async function resolveRuntimeEnv() {
+function waitForEnvReady() {
     if (window.ENV_READY) {
         return window.ENV_READY;
     }
 
-    const response = await fetch("/api/config", {
-        method: "GET",
-        cache: "no-store",
-        headers: { "Accept": "application/json" }
+    return new Promise((resolve, reject) => {
+        let attempts = 0;
+        const timer = setInterval(() => {
+            attempts += 1;
+            if (window.ENV_READY) {
+                clearInterval(timer);
+                resolve(window.ENV_READY);
+            } else if (attempts >= 100) {
+                clearInterval(timer);
+                reject(new Error("Konfigurasi persekitaran (window.ENV_READY) gagal dimuatkan."));
+            }
+        }, 20);
     });
-
-    if (!response.ok) {
-        throw new Error(`Gagal mendapatkan konfigurasi sistem (HTTP ${response.status}).`);
-    }
-
-    const payload = await response.json();
-    const frozen = Object.freeze({
-        SUPABASE_URL: String(payload.SUPABASE_URL || "").trim(),
-        SUPABASE_ANON_KEY: String(payload.SUPABASE_ANON_KEY || "").trim()
-    });
-    window.__ENV = frozen;
-    return frozen;
 }
 
 async function getClient() {
@@ -37,7 +33,7 @@ async function getClient() {
 
     if (!initPromise) {
         initPromise = (async () => {
-            const env = await resolveRuntimeEnv();
+            const env = await waitForEnvReady();
             if (!env.SUPABASE_URL || !env.SUPABASE_ANON_KEY) {
                 throw new Error("Konfigurasi Supabase tidak lengkap.");
             }

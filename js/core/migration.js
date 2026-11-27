@@ -123,7 +123,11 @@ async function resolveDynamicSchemas(signal) {
                     const allCols = Object.keys(apiTable.properties);
 
                     if (requiredCols.length > 0) {
-                        schemaDef.headers = requiredCols.filter((col) => allCols.includes(col));
+                        const resolvedRequired = requiredCols.filter((col) => allCols.includes(col));
+                        if (allCols.includes(schemaDef.primary_key) && !resolvedRequired.includes(schemaDef.primary_key)) {
+                            resolvedRequired.unshift(schemaDef.primary_key);
+                        }
+                        schemaDef.headers = resolvedRequired;
                         schemaDef.optional_headers = allCols.filter((col) => !schemaDef.headers.includes(col));
                     }
                 }

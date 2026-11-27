@@ -22,6 +22,11 @@ async function loadEnvironment() {
         throw new Error(`Gagal memuatkan konfigurasi sistem: ${detail}`);
     }
 
+    const contentType = response.headers.get("content-type") || "";
+    if (!contentType.includes("application/json")) {
+        throw new Error("Titik akhir /api/config memulangkan HTML dan bukan JSON. Pastikan fail functions/api/config.js berada di akar repositori serta Variables & Secrets Cloudflare Pages telah ditetapkan.");
+    }
+
     const raw = await response.json();
     const supabaseUrl = raw && typeof raw.SUPABASE_URL === "string" ? raw.SUPABASE_URL.trim() : "";
     const supabaseAnonKey = raw && typeof raw.SUPABASE_ANON_KEY === "string" ? raw.SUPABASE_ANON_KEY.trim() : "";
