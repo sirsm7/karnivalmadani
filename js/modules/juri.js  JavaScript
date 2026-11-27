@@ -1,0 +1,461 @@
+import { envReady } from "../core/config.js";
+import { realtimeSync } from "../core/realtime.js";
+
+let lifecycleBound = false;
+
+function el(id) {
+    return document.getElementById(id);
+}
+
+function createNode(tag, className = "", text = null) {
+    const node = document.createElement(tag);
+    if (className) node.className = className;
+    if (text !== null && text !== undefined) node.textContent = String(text);
+    return node;
+}
+
+function setLoading(visible) {
+    const overlay = el("loading_overlay");
+    if (!overlay) return;
+    if (visible) {
+        overlay.classList.remove("hidden");
+    } else {
+        overlay.classList.add("hidden");
+    }
+}
+
+async function getClient() {
+    await envReady;
+    if (window.getSupabaseClient) {
+        return window.getSupabaseClient();
+    }
+    return window.supabaseClient;
+}
+
+function bindJuriLifecycle() {
+    if (lifecycleBound) return;
+    lifecycleBound = true;
+
+    document.addEventListener("visibilitychange", async () => {
+        if (document.visibilityState === "visible" && juriApp.juriName) {
+            await realtimeSync.reconnectAll();
+            await juriApp.loadSenaraiPasukan(true);
+        }
+    });
+
+    window.addEventListener("online", async () => {
+        if (juriApp.juriName) {
+            await realtimeSync.reconnectAll();
+            await juriApp.loadSenaraiPasukan(true);
+        }
+    });
+}
+
+async function subscribeJuriRealtime() {
+    await realtimeSync.subscribe("juri_dashboard_live", {
+        tables: [
+            { table: "karnival_pasukan", event: "*" },
+            { table: "karnival_penilaian", event: "*" }
+        ],
+        onChange: async () => {
+            if (!juriApp.juriName) return;
+            await juriApp.loadSenaraiPasukan(true);
+        }
+    });
+}
+
+export const juriApp = {
+    juriName: null,
+    dataPasukan: [],
+    currentPasukanId: null,
+
+    async init() {
+        await envReady;
+        if (window.supabaseReady) {
+            await window.supabaseReady;
+        }
+
+        const savedName = localStorage.getItem("karnival_juri_session");
+        if (savedName) {
+            juriApp.juriName = savedName;
+            el("view_login").classList.add("hidden");
+            el("view_dashboard").classList.remove("hidden");
+            el("paparan_nama_juri_header").textContent = juriApp.juriName;
+            bindJuriLifecycle();
+            await subscribeJuriRealtime();
+            await juriApp.loadSenaraiPasukan();
+        } else {
+            await juriApp.loadSenaraiJuriDropdown();
+        }
+
+        const markahInputs = document.querySelectorAll(".input-markah");
+        const paparJumlah = el("paparan_jumlah_markah");
+
+        markahInputs.forEach((input) => {
+            input.addEventListener("input", () => {
+                let total = 0;
+                markahInputs.forEach((inp) => {
+                    total += parseInt(inp.value, 10) || 0;
+                });
+                if (paparJumlah) {
+                    paparJumlah.textContent = total;
+                }
+            });
+        });
+    },
+
+    toTitleCase(str) {
+        return String(str || "")
+            .toLowerCase()
+            .split(" ")
+            .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+            .join(" ");
+    },
+
+    getEmbedUrl(url) {
+        if (!url) return null;
+        if (url.includes("youtube.com") || url.includes("youtu.be")) {
+            const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
+            const match = url.match(regExp);
+            if (match && match[2] && match[2].length === 11) {
+                return `https://www.youtube.com/embed/${match[2]}`;
+            }
+            return null;
+        }
+        if (url.includes("drive.google.com")) {
+            return url.replace(/\/view.*$/, "/preview");
+        }
+        return url;
+    },
+
+    async loadSenaraiJuriDropdown() {
+        try {
+            const client = await getClient();
+            const { data, error } = await client.from("karnival_penilaian").select("nama_juri");
+            if (error) throw error;
+
+            const datalist = el("senarai_juri_sedia_ada");
+            if (!datalist) return;
+            datalist.textContent = "";
+
+            if (Array.isArray(data) && data.length > 0) {
+                const uniqueJuri = [...new Set(data.map((item) => item.nama_juri))];
+                uniqueJuri.forEach((nama) => {
+                    const opt = document.createElement("option");
+                    opt.value = nama;
+                    datalist.appendChild(opt);
+                });
+            }
+        } catch (_) {
+            const datalist = el("senarai_juri_sedia_ada");
+            if (datalist) datalist.textContent = "";
+        }
+    },
+
+    async login(e) {
+        e.preventDefault();
+        const pwd = el("juri_pwd").value;
+        const namaInput = el("juri_nama_input").value.trim();
+
+        if (pwd === "juri@12345") {
+            if (namaInput === "") {
+                window.Swal.fire("Ralat", "Sila masukkan nama anda.", "error");
+                return;
+            }
+
+            juriApp.juriName = juriApp.toTitleCase(namaInput);
+            localStorage.setItem("karnival_juri_session", juriApp.juriName);
+
+            el("view_login").classList.add("hidden");
+            el("view_dashboard").classList.remove("hidden");
+            el("paparan_nama_juri_header").textContent = juriApp.juriName;
+
+            bindJuriLifecycle();
+            await subscribeJuriRealtime();
+            await juriApp.loadSenaraiPasukan();
+        } else {
+            window.Swal.fire("Ralat", "Katalaluan Juri Salah!", "error");
+        }
+    },
+
+    async logout() {
+        juriApp.juriName = null;
+        juriApp.dataPasukan = [];
+        juriApp.currentPasukanId = null;
+        localStorage.removeItem("karnival_juri_session");
+        await realtimeSync.unsubscribe("juri_dashboard_live");
+
+        const iframeVideo = el("iframe_video");
+        if (iframeVideo) iframeVideo.src = "";
+
+        el("view_dashboard").classList.add("hidden");
+        el("view_penilaian").classList.add("hidden");
+        el("view_login").classList.remove("hidden");
+        el("juri_pwd").value = "";
+
+        await juriApp.loadSenaraiJuriDropdown();
+    },
+
+    async loadSenaraiPasukan(silent = false) {
+        if (!juriApp.juriName) return;
+
+        if (!silent) {
+            setLoading(true);
+        }
+
+        try {
+            const client = await getClient();
+            const { data: dataPasukan, error: errPasukan } = await client
+                .from("karnival_pasukan")
+                .select(`
+                    id, nama_pasukan, pautan_hasil, disahkan,
+                    karnival_guru ( pertandingan, kategori_pertandingan, karnival_sekolah (kod, nama) ),
+                    karnival_penilaian ( id, nama_juri, markah_tema, markah_visual, markah_kreativiti, markah_audio )
+                `)
+                .order("created_at", { ascending: true });
+
+            if (errPasukan) throw errPasukan;
+
+            juriApp.dataPasukan = (dataPasukan || [])
+                .filter((p) => p.karnival_guru && p.karnival_guru.pertandingan === "Animasi AI" && p.disahkan === true)
+                .map((p) => {
+                    const rekodJuriIni = (p.karnival_penilaian || []).find((k) => k.nama_juri === juriApp.juriName);
+                    return {
+                        ...p,
+                        markah_juri_ini: rekodJuriIni || null,
+                        isDinilaiOlehSistem: Boolean(rekodJuriIni)
+                    };
+                });
+
+            juriApp.renderTable();
+        } catch (_) {
+            if (!silent) {
+                window.Swal.fire("Ralat", "Gagal memuat turun data pasukan.", "error");
+            }
+        } finally {
+            if (!silent) {
+                setLoading(false);
+            }
+        }
+    },
+
+    renderTable() {
+        const fKategori = el("filter_kategori").value;
+        const fStatusNilai = el("filter_status_nilai").value;
+        const tbody = el("table_body_pasukan");
+        tbody.textContent = "";
+
+        const filtered = juriApp.dataPasukan.filter((item) => {
+            const kategori = item.karnival_guru.kategori_pertandingan;
+            if (fKategori !== "Semua" && kategori !== fKategori) return false;
+            if (fStatusNilai === "Belum" && item.isDinilaiOlehSistem) return false;
+            if (fStatusNilai === "Selesai" && !item.isDinilaiOlehSistem) return false;
+            return true;
+        });
+
+        if (filtered.length === 0) {
+            const emptyTr = createNode("tr");
+            const emptyTd = createNode("td", "text-center py-6 bg-white border-b italic text-gray-500", "Tiada pasukan ditemui berdasarkan tapisan semasa.");
+            emptyTd.colSpan = 7;
+            emptyTr.appendChild(emptyTd);
+            tbody.appendChild(emptyTr);
+            return;
+        }
+
+        const frag = document.createDocumentFragment();
+        filtered.forEach((item, index) => {
+            const sekolah = item.karnival_guru.karnival_sekolah || { nama: "-" };
+            const tr = createNode("tr", "border-b border-gray-200 hover:bg-green-50/50 transition");
+
+            const tdBil = createNode("td", "py-3 px-3 text-center font-bold text-gray-500", index + 1);
+
+            const tdSekolah = createNode("td", "py-3 px-3 align-middle");
+            tdSekolah.appendChild(createNode("div", "font-bold text-gray-800 text-sm", sekolah.nama));
+
+            const tdPasukan = createNode("td", "py-3 px-3 align-middle");
+            tdPasukan.appendChild(createNode("div", "font-black text-green-700 text-base", item.nama_pasukan));
+
+            const tdKategori = createNode("td", "py-3 px-3 align-middle");
+            tdKategori.appendChild(createNode("div", "text-xs font-semibold text-gray-700", item.karnival_guru.kategori_pertandingan));
+
+            const tdVideo = createNode("td", "py-3 px-3 text-center align-middle w-28");
+            tdVideo.appendChild(
+                item.pautan_hasil
+                    ? createNode("span", "bg-blue-100 text-blue-700 px-2 py-1 rounded text-xs font-semibold inline-block border border-blue-200", "Video Tersedia")
+                    : createNode("span", "bg-gray-100 text-gray-500 px-2 py-1 rounded text-xs font-semibold inline-block border", "Belum Dihantar")
+            );
+
+            const tdStatus = createNode("td", "py-3 px-3 text-center align-middle w-32");
+            const tdTindakan = createNode("td", "py-3 px-3 text-center align-middle w-36");
+
+            if (item.isDinilaiOlehSistem && item.markah_juri_ini) {
+                const m = item.markah_juri_ini;
+                const total = m.markah_tema + m.markah_visual + m.markah_kreativiti + m.markah_audio;
+                tdStatus.appendChild(
+                    createNode("div", "bg-green-100 text-green-800 text-xs font-bold px-2 py-1 rounded-md mb-1 inline-block border border-green-300", `Selesai (${total}/100)`)
+                );
+
+                const btnUpdate = createNode("button", "bg-yellow-500 hover:bg-yellow-600 text-white text-xs font-bold px-3 py-1.5 rounded w-full shadow-sm transition", "✏️ Lihat & Kemaskini");
+                btnUpdate.type = "button";
+                btnUpdate.addEventListener("click", () => juriApp.bukaPenilaian(item.id));
+                tdTindakan.appendChild(btnUpdate);
+            } else {
+                tdStatus.appendChild(
+                    createNode("span", "bg-gray-100 text-gray-600 text-xs font-bold px-2 py-1 rounded-md mb-1 inline-block border border-gray-300", "Menunggu Penilaian")
+                );
+
+                const btnScore = createNode("button", "bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold px-3 py-1.5 rounded w-full shadow-sm transition", "📝 Nilai Sekarang");
+                btnScore.type = "button";
+                btnScore.addEventListener("click", () => juriApp.bukaPenilaian(item.id));
+                tdTindakan.appendChild(btnScore);
+            }
+
+            tr.append(tdBil, tdSekolah, tdPasukan, tdKategori, tdVideo, tdStatus, tdTindakan);
+            frag.appendChild(tr);
+        });
+
+        tbody.appendChild(frag);
+    },
+
+    bukaPenilaian(pasukan_id) {
+        const pasukan = juriApp.dataPasukan.find((p) => p.id === pasukan_id);
+        if (!pasukan) return;
+
+        juriApp.currentPasukanId = pasukan_id;
+
+        el("penilaian_pasukan_nama").textContent = pasukan.nama_pasukan;
+        el("penilaian_sekolah_nama").textContent = pasukan.karnival_guru.karnival_sekolah.nama;
+        el("paparan_borang_nama_juri").textContent = juriApp.juriName;
+
+        const iframeVideo = el("iframe_video");
+        const teksTiadaVideo = el("teks_tiada_video");
+        const embedUrl = juriApp.getEmbedUrl(pasukan.pautan_hasil);
+
+        if (embedUrl) {
+            iframeVideo.src = embedUrl;
+            iframeVideo.classList.remove("hidden");
+            teksTiadaVideo.classList.add("hidden");
+        } else {
+            iframeVideo.src = "";
+            iframeVideo.classList.add("hidden");
+            teksTiadaVideo.classList.remove("hidden");
+            teksTiadaVideo.textContent = pasukan.pautan_hasil
+                ? "Format pautan video tidak disokong untuk paparan terus."
+                : "Peserta belum menghantar pautan video.";
+        }
+
+        el("form_penilaian").reset();
+        el("paparan_jumlah_markah").textContent = "0";
+        el("rekod_penilaian_id").value = "";
+
+        const btnSimpan = el("btn_simpan_juri");
+
+        if (pasukan.isDinilaiOlehSistem && pasukan.markah_juri_ini) {
+            const m = pasukan.markah_juri_ini;
+            el("rekod_penilaian_id").value = m.id;
+            el("markah_tema").value = m.markah_tema;
+            el("markah_visual").value = m.markah_visual;
+            el("markah_kreativiti").value = m.markah_kreativiti;
+            el("markah_audio").value = m.markah_audio;
+
+            const total = m.markah_tema + m.markah_visual + m.markah_kreativiti + m.markah_audio;
+            el("paparan_jumlah_markah").textContent = total;
+
+            btnSimpan.textContent = "✏️ Kemaskini Markah Penilaian";
+            btnSimpan.classList.replace("bg-green-600", "bg-yellow-500");
+            btnSimpan.classList.replace("hover:bg-green-700", "hover:bg-yellow-600");
+        } else {
+            btnSimpan.textContent = "💾 Simpan & Hantar Markah";
+            btnSimpan.classList.replace("bg-yellow-500", "bg-green-600");
+            btnSimpan.classList.replace("hover:bg-yellow-600", "hover:bg-green-700");
+        }
+
+        el("view_dashboard").classList.add("hidden");
+        el("view_penilaian").classList.remove("hidden");
+    },
+
+    async tutupPenilaian() {
+        juriApp.currentPasukanId = null;
+
+        const iframeVideo = el("iframe_video");
+        if (iframeVideo) iframeVideo.src = "";
+
+        el("view_penilaian").classList.add("hidden");
+        el("view_dashboard").classList.remove("hidden");
+
+        await juriApp.loadSenaraiPasukan();
+    },
+
+    async simpanPenilaian(e) {
+        e.preventDefault();
+
+        const rekodId = el("rekod_penilaian_id").value;
+        const tema = parseInt(el("markah_tema").value, 10) || 0;
+        const visual = parseInt(el("markah_visual").value, 10) || 0;
+        const kreativiti = parseInt(el("markah_kreativiti").value, 10) || 0;
+        const audio = parseInt(el("markah_audio").value, 10) || 0;
+
+        if (tema > 30 || visual > 30 || kreativiti > 20 || audio > 20) {
+            window.Swal.fire("Ralat Markah", "Pastikan markah tidak melebihi wajaran yang ditetapkan bagi setiap kriteria.", "error");
+            return;
+        }
+
+        setLoading(true);
+
+        try {
+            const client = await getClient();
+            let result;
+
+            if (rekodId !== "") {
+                result = await client
+                    .from("karnival_penilaian")
+                    .update({
+                        markah_tema: tema,
+                        markah_visual: visual,
+                        markah_kreativiti: kreativiti,
+                        markah_audio: audio
+                    })
+                    .eq("id", rekodId);
+            } else {
+                result = await client
+                    .from("karnival_penilaian")
+                    .insert([{
+                        pasukan_id: juriApp.currentPasukanId,
+                        nama_juri: juriApp.juriName,
+                        markah_tema: tema,
+                        markah_visual: visual,
+                        markah_kreativiti: kreativiti,
+                        markah_audio: audio
+                    }]);
+            }
+
+            if (result.error) throw result.error;
+
+            await window.Swal.fire({
+                title: "Berjaya!",
+                text: "Markah penilaian anda telah disimpan dan direkodkan ke dalam sistem.",
+                icon: "success",
+                confirmButtonText: "Kembali Ke Senarai",
+                confirmButtonColor: "#16a34a"
+            });
+
+            await juriApp.tutupPenilaian();
+        } catch (_) {
+            window.Swal.fire("Ralat", "Gagal menyimpan rekod pemarkahan. Sila cuba lagi.", "error");
+        } finally {
+            setLoading(false);
+        }
+    }
+};
+
+export function initJuriPortal() {
+    return juriApp.init();
+}
+
+if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", initJuriPortal);
+} else {
+    initJuriPortal();
+}
+
+window.juriApp = juriApp;

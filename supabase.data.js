@@ -1,34 +1,84 @@
-// Maklumat API Supabase
-const SUPABASE_URL = "https://app.tech4ag.my";
-const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYW5vbiIsImlzcyI6InN1cGFiYXNlIiwiaWF0IjoxNzYzMzczNjQ1LCJleHAiOjIwNzg3MzM2NDV9.vZOedqJzUn01PjwfaQp7VvRzSm4aRMr21QblPDK8AoY";
+let supabaseClientInstance = null;
+let initPromise = null;
 
-// Inisialisasi Supabase Client
-const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+async function resolveRuntimeEnv() {
+    if (window.ENV_READY) {
+        return window.ENV_READY;
+    }
 
-// Dedahkan supabaseClient ke window supaya admin.html dan juri.html boleh guna klien yang sama secara terus jika perlu
-window.supabaseClient = supabaseClient;
+    const response = await fetch("/api/config", {
+        method: "GET",
+        cache: "no-store",
+        headers: { "Accept": "application/json" }
+    });
+
+    if (!response.ok) {
+        throw new Error(`Gagal mendapatkan konfigurasi sistem (HTTP ${response.status}).`);
+    }
+
+    const payload = await response.json();
+    const frozen = Object.freeze({
+        SUPABASE_URL: String(payload.SUPABASE_URL || "").trim(),
+        SUPABASE_ANON_KEY: String(payload.SUPABASE_ANON_KEY || "").trim()
+    });
+    window.__ENV = frozen;
+    return frozen;
+}
+
+async function getClient() {
+    if (supabaseClientInstance) {
+        return supabaseClientInstance;
+    }
+
+    if (window.supabaseClient) {
+        supabaseClientInstance = window.supabaseClient;
+        return supabaseClientInstance;
+    }
+
+    if (!initPromise) {
+        initPromise = (async () => {
+            const env = await resolveRuntimeEnv();
+            if (!env.SUPABASE_URL || !env.SUPABASE_ANON_KEY) {
+                throw new Error("Konfigurasi Supabase tidak lengkap.");
+            }
+            const client = window.supabase.createClient(env.SUPABASE_URL, env.SUPABASE_ANON_KEY);
+            supabaseClientInstance = client;
+            window.supabaseClient = client;
+            return client;
+        })();
+    }
+
+    return initPromise;
+}
+
+window.supabaseReady = getClient();
+window.getSupabaseClient = getClient;
 
 const db = {
-    // 1. Dapatkan Senarai Sekolah (Diurut mengikut kod)
     async getSenaraiSekolah() {
         try {
-            const { data, error } = await supabaseClient
-                .from('karnival_sekolah')
-                .select('*')
-                .order('kod', { ascending: true });
-            
-            if (error) throw error;
+            const fetcher = async () => {
+                const client = await getClient();
+                const { data, error } = await client
+                    .from('karnival_sekolah')
+                    .select('*')
+                    .order('kod', { ascending: true });
+                if (error) throw error;
+                return data;
+            };
+            const data = window.idbCache
+                ? await window.idbCache.getWithSWR('karnival:sekolah_list', fetcher, 600000)
+                : await fetcher();
             return { success: true, data };
         } catch (error) {
-            console.error("Ralat getSenaraiSekolah:", error);
             return { success: false, error: error.message };
         }
     },
 
-    // 2. Daftar Guru Baru
     async daftarGuru(guruData) {
         try {
-            const { data, error } = await supabaseClient
+            const client = await getClient();
+            const { data, error } = await client
                 .from('karnival_guru')
                 .insert([guruData])
                 .select()
@@ -37,15 +87,14 @@ const db = {
             if (error) throw error;
             return { success: true, data };
         } catch (error) {
-            console.error("Ralat daftarGuru:", error);
             return { success: false, error: error.message };
         }
     },
 
-    // 3. Semak Guru (Jika guru telah daftar untuk sekolah dan pertandingan tertentu)
     async semakGuruExist(sekolah_id, nokp, pertandingan) {
         try {
-            const { data, error } = await supabaseClient
+            const client = await getClient();
+            const { data, error } = await client
                 .from('karnival_guru')
                 .select('*, karnival_sekolah(kod, nama)')
                 .eq('sekolah_id', sekolah_id)
@@ -54,17 +103,16 @@ const db = {
                 .maybeSingle();
             
             if (error) throw error; 
-            return { success: true, data: data }; // data akan jadi null jika tiada rekod
+            return { success: true, data: data };
         } catch (error) {
-            console.error("Ralat semakGuruExist:", error);
             return { success: false, error: error.message };
         }
     },
 
-    // 3.1 Dapatkan Senarai Guru untuk Sekolah dan Pertandingan tertentu (Tanpa Data Peribadi)
     async getSenaraiGuruBagiSekolahPertandingan(sekolah_id, pertandingan) {
         try {
-            const { data, error } = await supabaseClient
+            const client = await getClient();
+            const { data, error } = await client
                 .from('karnival_guru')
                 .select(`
                     id, 
@@ -78,15 +126,14 @@ const db = {
             if (error) throw error; 
             return { success: true, data: data };
         } catch (error) {
-            console.error("Ralat getSenaraiGuruBagiSekolahPertandingan:", error);
             return { success: false, error: error.message };
         }
     },
 
-    // 3.2 Semak No KP untuk Login Kad Guru
     async semakGuruDanLogin(guru_id, nokp) {
         try {
-            const { data, error } = await supabaseClient
+            const client = await getClient();
+            const { data, error } = await client
                 .from('karnival_guru')
                 .select('*, karnival_sekolah(kod, nama)')
                 .eq('id', guru_id)
@@ -96,15 +143,14 @@ const db = {
             if (error) throw error; 
             return { success: true, data: data };
         } catch (error) {
-            console.error("Ralat semakGuruDanLogin:", error);
             return { success: false, error: error.message };
         }
     },
 
-    // 4. Daftar Pasukan & Murid (Menggunakan RPC secara atomik)
     async daftarPasukan(guru_id, nama_pasukan, murid1, murid2) {
         try {
-            const { data, error } = await supabaseClient.rpc('karnival_daftar_pasukan', {
+            const client = await getClient();
+            const { data, error } = await client.rpc('karnival_daftar_pasukan', {
                 p_guru_id: guru_id,
                 p_nama_pasukan: nama_pasukan,
                 p_murid1_nama: murid1.nama,
@@ -118,15 +164,14 @@ const db = {
             if (error) throw error;
             return { success: true, pasukan_id: data };
         } catch (error) {
-            console.error("Ralat daftarPasukan:", error);
             return { success: false, error: error.message };
         }
     },
 
-    // 5. Dapatkan Senarai Pasukan bawah bimbingan Guru (beserta nama murid)
     async getPasukanOlehGuru(guru_id) {
         try {
-            const { data, error } = await supabaseClient
+            const client = await getClient();
+            const { data, error } = await client
                 .from('karnival_pasukan')
                 .select('*, karnival_murid(*)')
                 .eq('guru_id', guru_id)
@@ -135,15 +180,14 @@ const db = {
             if (error) throw error;
             return { success: true, data };
         } catch (error) {
-            console.error("Ralat getPasukanOlehGuru:", error);
             return { success: false, error: error.message };
         }
     },
 
-    // 6. Kemaskini Pautan Hasil Video (Update pautan_hasil di table karnival_pasukan)
     async updatePautanHasil(pasukan_id, pautan) {
         try {
-            const { data, error } = await supabaseClient
+            const client = await getClient();
+            const { error } = await client
                 .from('karnival_pasukan')
                 .update({ pautan_hasil: pautan })
                 .eq('id', pasukan_id);
@@ -151,66 +195,28 @@ const db = {
             if (error) throw error;
             return { success: true };
         } catch (error) {
-            console.error("Ralat updatePautanHasil:", error);
             return { success: false, error: error.message };
         }
     },
 
-    // 7. Muat Naik Fail Kod Robotik ke Google Drive via GAS Web App
-    async muatNaikFailGAS(fileDataUrl, fileName, mimeType, kodSekolah, namaPasukan) {
-        try {
-            // fileDataUrl mengandungi 'data:image/png;base64,iVBOR...'
-            // Kita buang header untuk hantar content base64 sahaja
-            const base64Content = fileDataUrl.split(',')[1];
-            
-            const payload = {
-                fileData: base64Content,
-                fileName: fileName,
-                mimeType: mimeType,
-                kodSekolah: kodSekolah,
-                namaPasukan: namaPasukan
-            };
-
-            const response = await fetch(GAS_WEB_APP_URL, {
-                method: "POST",
-                headers: {
-                    "Content-Type": "text/plain;charset=utf-8",
-                },
-                body: JSON.stringify(payload)
-            });
-
-            const result = await response.json();
-            
-            if (result.success) {
-                return { success: true, fileUrl: result.fileUrl };
-            } else {
-                throw new Error(result.error);
-            }
-        } catch (error) {
-            console.error("Ralat muatNaikFailGAS:", error);
-            return { success: false, error: error.message };
-        }
-    },
-
-    // 8. Padam Pasukan
     async padamPasukan(pasukan_id) {
         try {
-            const { error } = await supabaseClient.rpc('karnival_padam_pasukan', {
+            const client = await getClient();
+            const { error } = await client.rpc('karnival_padam_pasukan', {
                 p_pasukan_id: pasukan_id
             });
             
             if (error) throw error;
             return { success: true };
         } catch (error) {
-            console.error("Ralat padamPasukan:", error);
             return { success: false, error: error.message };
         }
     },
 
-    // 9. Kemaskini Pasukan
     async kemaskiniPasukan(pasukan_id, nama_pasukan, murid1, murid2) {
         try {
-            const { error } = await supabaseClient.rpc('karnival_kemaskini_pasukan', {
+            const client = await getClient();
+            const { error } = await client.rpc('karnival_kemaskini_pasukan', {
                 p_pasukan_id: pasukan_id,
                 p_nama_pasukan: nama_pasukan,
                 p_murid1_nama: murid1.nama,
@@ -224,128 +230,132 @@ const db = {
             if (error) throw error;
             return { success: true };
         } catch (error) {
-            console.error("Ralat kemaskiniPasukan:", error);
             return { success: false, error: error.message };
         }
     },
 
-    // 10. Dapatkan Statistik Pendaftaran (Jumlah Sekolah & Jumlah Pasukan)
     async getStatistikPendaftaran(pertandingan) {
         try {
-            const { data, error } = await supabaseClient.rpc('karnival_get_statistik_pendaftaran', {
+            const client = await getClient();
+            const { data, error } = await client.rpc('karnival_get_statistik_pendaftaran', {
                 p_pertandingan: pertandingan
             });
             
             if (error) throw error;
             return { success: true, data: data[0] };
         } catch (error) {
-            console.error("Ralat getStatistikPendaftaran:", error);
             return { success: false, error: error.message };
         }
     },
     
-    // 11. Dapatkan Senarai Sekolah Yang Telah Mendaftar
     async getSenaraiSekolahDaftar(pertandingan) {
         try {
-            const { data, error } = await supabaseClient.rpc('karnival_get_senarai_sekolah_daftar', {
+            const client = await getClient();
+            const { data, error } = await client.rpc('karnival_get_senarai_sekolah_daftar', {
                 p_pertandingan: pertandingan
             });
             
             if (error) throw error;
             return { success: true, data: data };
         } catch (error) {
-            console.error("Ralat getSenaraiSekolahDaftar:", error);
             return { success: false, error: error.message };
         }
     },
     
-    // 12. Dapatkan Senarai Sekolah beserta Jumlah Pasukan
     async getSenaraiPasukanIkutSekolah(pertandingan) {
         try {
-            const { data, error } = await supabaseClient.rpc('karnival_get_senarai_pasukan_ikut_sekolah', {
+            const client = await getClient();
+            const { data, error } = await client.rpc('karnival_get_senarai_pasukan_ikut_sekolah', {
                 p_pertandingan: pertandingan
             });
             
             if (error) throw error;
             return { success: true, data: data };
         } catch (error) {
-            console.error("Ralat getSenaraiPasukanIkutSekolah:", error);
             return { success: false, error: error.message };
         }
     },
 
-    // 13. Dapatkan Tetapan Sistem Individu
     async getTetapanSistem(setting_key) {
         try {
-            const { data, error } = await supabaseClient
-                .from('karnival_settings')
-                .select('setting_value')
-                .eq('setting_key', setting_key)
-                .maybeSingle();
-            
-            if (error) throw error;
-            return { success: true, value: data ? data.setting_value : null };
+            const fetcher = async () => {
+                const client = await getClient();
+                const { data, error } = await client
+                    .from('karnival_settings')
+                    .select('setting_value')
+                    .eq('setting_key', setting_key)
+                    .maybeSingle();
+                if (error) throw error;
+                return data ? data.setting_value : null;
+            };
+            const value = window.idbCache
+                ? await window.idbCache.getWithSWR(`karnival:settings:${setting_key}`, fetcher, 60000)
+                : await fetcher();
+            return { success: true, value };
         } catch (error) {
-            console.error("Ralat getTetapanSistem:", error);
             return { success: false, error: error.message };
         }
     },
 
-    // 14. Kemaskini Tetapan Sistem Individu
     async kemaskiniTetapanSistem(setting_key, setting_value) {
         try {
-            const { error } = await supabaseClient
+            const client = await getClient();
+            const { error } = await client
                 .from('karnival_settings')
                 .update({ setting_value: String(setting_value), updated_at: new Date().toISOString() })
                 .eq('setting_key', setting_key);
             
             if (error) throw error;
+            if (window.idbCache) {
+                await window.idbCache.invalidatePrefix('karnival:settings');
+            }
             return { success: true };
         } catch (error) {
-            console.error("Ralat kemaskiniTetapanSistem:", error);
             return { success: false, error: error.message };
         }
     },
 
-    // 15. Dapatkan Semua Tetapan Sistem (Pukal) - FUNGSI BAHARU
     async getSemuaTetapan() {
         try {
-            const { data, error } = await supabaseClient
-                .from('karnival_settings')
-                .select('setting_key, setting_value');
-            
-            if (error) throw error;
-            
-            // Tukar susunan array kepada format objek kekunci-nilai (key-value)
-            const settingsObj = {};
-            if (data) {
-                data.forEach(item => {
-                    settingsObj[item.setting_key] = item.setting_value;
-                });
-            }
-            return { success: true, data: settingsObj };
+            const fetcher = async () => {
+                const client = await getClient();
+                const { data, error } = await client
+                    .from('karnival_settings')
+                    .select('setting_key, setting_value');
+                if (error) throw error;
+                const settingsObj = {};
+                if (data) {
+                    data.forEach(item => {
+                        settingsObj[item.setting_key] = item.setting_value;
+                    });
+                }
+                return settingsObj;
+            };
+            const data = window.idbCache
+                ? await window.idbCache.getWithSWR('karnival:settings:all', fetcher, 60000)
+                : await fetcher();
+            return { success: true, data };
         } catch (error) {
-            console.error("Ralat getSemuaTetapan:", error);
             return { success: false, error: error.message };
         }
     },
 
-    // 16. Kemaskini Banyak Tetapan (Pukal Upsert) - FUNGSI BAHARU
     async kemaskiniBanyakTetapan(settingsArray) {
         try {
-            // format jangkaan: [{ setting_key: 'kunci', setting_value: 'nilai', updated_at: '...' }]
-            const { error } = await supabaseClient
+            const client = await getClient();
+            const { error } = await client
                 .from('karnival_settings')
                 .upsert(settingsArray, { onConflict: 'setting_key' });
             
             if (error) throw error;
+            if (window.idbCache) {
+                await window.idbCache.invalidatePrefix('karnival:settings');
+            }
             return { success: true };
         } catch (error) {
-            console.error("Ralat kemaskiniBanyakTetapan:", error);
             return { success: false, error: error.message };
         }
     }
 };
 
-// Pastikan objek db tersedia secara global untuk digunakan oleh app.js dan UI lain
 window.db = db;

@@ -1,35 +1,68 @@
-// --- APP STATE ---
-const appState = {
-    sekolah: null, // {id, kod, nama, jenis}
-    pertandingan: null, // 'Animasi AI'
-    kategori: null,
-    guru: null, // {id, nama, nokp, notel, emel, pertandingan, kategori_pertandingan}
-    pasukanList: [], // Array dari pangkalan data
-    sekolahRawList: [], // Cache untuk semua sekolah (Tujuan carian)
-    
-    // Constant Imej & Sijil (Lokal)
-    logoUrl: "LogoPPDAG.png",
-    signUrl: "tttnhj.png",
-    borderUrl: "bordersijil.png", // Added border image URL
-    
-    // Cached Images for jsPDF
-    imgLogoBase64: null,
-    imgSignBase64: null,
-    imgBorderBase64: null, // Added cache for border image
-    fontGreatVibesBase64: null, // Cache untuk font
+import { envReady } from "./js/core/config.js";
+import { realtimeSync } from "./js/core/realtime.js";
+import { preloadCertificateAssets } from "./js/modules/sijil-pdf.js";
+import { initPesertaPortal, refreshStatsAndSettings, pesertaController } from "./js/modules/peserta.js";
 
-    // Status Penutupan Sistem Baharu Berdasarkan DB
-    tarikhMula: null,
-    tarikhTamat: null,
-    kategoriDibuka: "Semua", // Lalai buka semua
-    
-    isSistemTutupKecemasan: false, // Legacy fallback jika setting lama masih true
-    isMasaTamat: false,
-    isBelumMula: false,
+let lifecycleBound = false;
 
-    // Kawalan Pop-up Pemasa
-    timerInterval: null
-};
+function bindMobileLifecycle() {
+    if (lifecycleBound) {
+        return;
+    }
+    lifecycleBound = true;
+
+    document.addEventListener("visibilitychange", async () => {
+        if (document.visibilityState === "visible") {
+            await realtimeSync.reconnectAll();
+            await refreshStatsAndSettings();
+        }
+    });
+
+    window.addEventListener("online", async () => {
+        await realtimeSync.reconnectAll();
+        await refreshStatsAndSettings();
+    });
+}
+
+async function bootstrapPesertaApp() {
+    try {
+        await envReady;
+        if (window.supabaseReady) {
+            await window.supabaseReady;
+        }
+
+        await initPesertaPortal();
+        preloadCertificateAssets();
+        bindMobileLifecycle();
+
+        await realtimeSync.subscribe("peserta_portal_live", {
+            tables: [
+                { table: "karnival_settings", event: "*" },
+                { table: "karnival_pasukan", event: "*" },
+                { table: "karnival_guru", event: "*" }
+            ],
+            cachePrefixes: ["karnival:settings"],
+            onChange: async (payload, tableName) => {
+                if (tableName === "karnival_settings" && payload && payload.new) {
+                    realtimeSync.seedTimestamp("karnival_settings", payload.new);
+                }
+                await refreshStatsAndSettings();
+            }
+        });
+    } catch (error) {
+        if (window.Swal) {
+            window.Swal.fire("Ralat Sambungan", error.message || "Gagal memulakan aplikasi.", "error");
+        }
+    }
+}
+
+if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", bootstrapPesertaApp);
+} else {
+    bootstrapPesertaApp();
+}
+
+window.app = pesertaController;
 
 // --- DOM ELEMENTS ---
 const viewPilihSekolah = document.getElementById('view_pilih_sekolah');
