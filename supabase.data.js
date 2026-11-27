@@ -37,7 +37,12 @@ async function getClient() {
             if (!env.SUPABASE_URL || !env.SUPABASE_ANON_KEY) {
                 throw new Error("Konfigurasi Supabase tidak lengkap.");
             }
-            const client = window.supabase.createClient(env.SUPABASE_URL, env.SUPABASE_ANON_KEY);
+            const targetSchema = env.SUPABASE_SCHEMA || "data_tanding";
+            const client = window.supabase.createClient(env.SUPABASE_URL, env.SUPABASE_ANON_KEY, {
+                db: {
+                    schema: targetSchema
+                }
+            });
             supabaseClientInstance = client;
             window.supabaseClient = client;
             return client;
@@ -79,7 +84,7 @@ const db = {
                 .insert([guruData])
                 .select()
                 .maybeSingle();
-            
+
             if (error) throw error;
             return { success: true, data };
         } catch (error) {
@@ -97,8 +102,8 @@ const db = {
                 .eq('nokp', nokp)
                 .eq('pertandingan', pertandingan)
                 .maybeSingle();
-            
-            if (error) throw error; 
+
+            if (error) throw error;
             return { success: true, data: data };
         } catch (error) {
             return { success: false, error: error.message };
@@ -111,15 +116,15 @@ const db = {
             const { data, error } = await client
                 .from('karnival_guru')
                 .select(`
-                    id, 
-                    nama, 
-                    kategori_pertandingan, 
+                    id,
+                    nama,
+                    kategori_pertandingan,
                     karnival_pasukan ( id )
                 `)
                 .eq('sekolah_id', sekolah_id)
                 .eq('pertandingan', pertandingan);
-            
-            if (error) throw error; 
+
+            if (error) throw error;
             return { success: true, data: data };
         } catch (error) {
             return { success: false, error: error.message };
@@ -135,8 +140,8 @@ const db = {
                 .eq('id', guru_id)
                 .eq('nokp', nokp)
                 .maybeSingle();
-            
-            if (error) throw error; 
+
+            if (error) throw error;
             return { success: true, data: data };
         } catch (error) {
             return { success: false, error: error.message };
@@ -156,7 +161,7 @@ const db = {
                 p_murid2_nokp: murid2 ? murid2.nokp : null,
                 p_murid2_emel: murid2 ? murid2.emel : null
             });
-            
+
             if (error) throw error;
             return { success: true, pasukan_id: data };
         } catch (error) {
@@ -172,7 +177,7 @@ const db = {
                 .select('*, karnival_murid(*)')
                 .eq('guru_id', guru_id)
                 .order('created_at', { ascending: false });
-            
+
             if (error) throw error;
             return { success: true, data };
         } catch (error) {
@@ -187,7 +192,7 @@ const db = {
                 .from('karnival_pasukan')
                 .update({ pautan_hasil: pautan })
                 .eq('id', pasukan_id);
-            
+
             if (error) throw error;
             return { success: true };
         } catch (error) {
@@ -201,7 +206,7 @@ const db = {
             const { error } = await client.rpc('karnival_padam_pasukan', {
                 p_pasukan_id: pasukan_id
             });
-            
+
             if (error) throw error;
             return { success: true };
         } catch (error) {
@@ -222,7 +227,7 @@ const db = {
                 p_murid2_nokp: murid2 ? murid2.nokp : null,
                 p_murid2_emel: murid2 ? murid2.emel : null
             });
-            
+
             if (error) throw error;
             return { success: true };
         } catch (error) {
@@ -236,35 +241,35 @@ const db = {
             const { data, error } = await client.rpc('karnival_get_statistik_pendaftaran', {
                 p_pertandingan: pertandingan
             });
-            
+
             if (error) throw error;
             return { success: true, data: data[0] };
         } catch (error) {
             return { success: false, error: error.message };
         }
     },
-    
+
     async getSenaraiSekolahDaftar(pertandingan) {
         try {
             const client = await getClient();
             const { data, error } = await client.rpc('karnival_get_senarai_sekolah_daftar', {
                 p_pertandingan: pertandingan
             });
-            
+
             if (error) throw error;
             return { success: true, data: data };
         } catch (error) {
             return { success: false, error: error.message };
         }
     },
-    
+
     async getSenaraiPasukanIkutSekolah(pertandingan) {
         try {
             const client = await getClient();
             const { data, error } = await client.rpc('karnival_get_senarai_pasukan_ikut_sekolah', {
                 p_pertandingan: pertandingan
             });
-            
+
             if (error) throw error;
             return { success: true, data: data };
         } catch (error) {
@@ -300,7 +305,7 @@ const db = {
                 .from('karnival_settings')
                 .update({ setting_value: String(setting_value), updated_at: new Date().toISOString() })
                 .eq('setting_key', setting_key);
-            
+
             if (error) throw error;
             if (window.idbCache) {
                 await window.idbCache.invalidatePrefix('karnival:settings');
@@ -342,7 +347,7 @@ const db = {
             const { error } = await client
                 .from('karnival_settings')
                 .upsert(settingsArray, { onConflict: 'setting_key' });
-            
+
             if (error) throw error;
             if (window.idbCache) {
                 await window.idbCache.invalidatePrefix('karnival:settings');

@@ -5,6 +5,11 @@ const activeSubscriptions = new Map();
 const localRecordTimestamps = new Map();
 let sharedClient = null;
 
+function getTargetSchema() {
+    const env = getEnv();
+    return env.SUPABASE_SCHEMA || "data_tanding";
+}
+
 function getClient() {
     if (sharedClient) {
         return sharedClient;
@@ -17,7 +22,12 @@ function getClient() {
 
     if (window.supabase && typeof window.supabase.createClient === "function") {
         const env = getEnv();
-        sharedClient = window.supabase.createClient(env.SUPABASE_URL, env.SUPABASE_ANON_KEY);
+        const targetSchema = getTargetSchema();
+        sharedClient = window.supabase.createClient(env.SUPABASE_URL, env.SUPABASE_ANON_KEY, {
+            db: {
+                schema: targetSchema
+            }
+        });
         window.supabaseClient = sharedClient;
         return sharedClient;
     }
@@ -78,6 +88,7 @@ function shouldApplyPayload(tableName, payload) {
 async function createAndBindChannel(key, config) {
     await envReady;
     const client = getClient();
+    const targetSchema = getTargetSchema();
 
     if (config.channel) {
         try {
@@ -94,7 +105,7 @@ async function createAndBindChannel(key, config) {
     config.tables.forEach((tableSpec) => {
         const filterObj = {
             event: tableSpec.event || "*",
-            schema: "public",
+            schema: tableSpec.schema || targetSchema,
             table: tableSpec.table
         };
 

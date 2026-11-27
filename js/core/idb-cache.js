@@ -1,7 +1,7 @@
 import { envReady } from "./config.js";
 
 const DB_NAME = "karnival_madani_cache_db";
-const DB_VERSION = 1;
+const DB_VERSION = 2;
 const STORE_NAME = "kv_store";
 const DEFAULT_TTL_MS = 300000;
 
@@ -32,9 +32,10 @@ function openDatabase() {
 
             request.onupgradeneeded = (event) => {
                 const db = event.target.result;
-                if (!db.objectStoreNames.contains(STORE_NAME)) {
-                    db.createObjectStore(STORE_NAME, { keyPath: "key" });
+                if (db.objectStoreNames.contains(STORE_NAME)) {
+                    db.deleteObjectStore(STORE_NAME);
                 }
+                db.createObjectStore(STORE_NAME, { keyPath: "key" });
             };
 
             request.onsuccess = (event) => {

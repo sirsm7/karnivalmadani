@@ -4,14 +4,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Panel Urusetia - Karnival Pendidikan Madani</title>
-    <!-- Favicon -->
     <link rel="icon" type="image/png" href="LogoPPDAG.png">
-    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- SweetAlert2 -->
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <link rel="stylesheet" href="/css/styles.css?v=1">
+    <link rel="stylesheet" href="/css/styles.css?v=2">
 </head>
 <body class="bg-gray-100 min-h-dvh font-sans text-gray-800">
 
@@ -27,11 +24,14 @@
 
         <main id="app_container" class="bg-white shadow-md rounded-lg p-6">
             
-            <!-- VIEW: LOGIN -->
             <section id="view_login">
                 <div class="max-w-md mx-auto py-8">
-                    <h2 class="text-xl font-bold border-b pb-2 mb-4 text-center">Log Masuk Admin</h2>
+                    <h2 class="text-xl font-bold border-b pb-2 mb-4 text-center">Log Masuk Admin (SUPER ADMIN)</h2>
                     <form id="form_login" onsubmit="adminApp.login(event)">
+                        <div class="mb-4">
+                            <label class="block text-gray-700 font-bold mb-2">Emel Akaun Pentadbir:</label>
+                            <input type="email" id="admin_email" required class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 lowercase" placeholder="contoh@edidik.my">
+                        </div>
                         <div class="mb-4">
                             <label class="block text-gray-700 font-bold mb-2">Katalaluan:</label>
                             <input type="password" id="admin_pwd" required class="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500" placeholder="Masukkan katalaluan...">
@@ -44,15 +44,16 @@
                 </div>
             </section>
 
-            <!-- VIEW: DASHBOARD -->
             <section id="view_dashboard" class="hidden">
                 <div class="flex flex-col md:flex-row justify-between items-start md:items-center border-b pb-4 mb-6 gap-4">
-                    <h2 class="text-xl font-bold text-gray-800">Dashboard Pengurusan</h2>
+                    <div>
+                        <h2 class="text-xl font-bold text-gray-800">Dashboard Pengurusan</h2>
+                        <p id="admin_session_badge" class="text-xs font-semibold text-indigo-700 mt-1"></p>
+                    </div>
                     
                     <div class="flex flex-wrap items-center gap-3">
                         <button onclick="adminApp.bukaTetapanSistem()" class="text-white text-sm font-bold bg-indigo-600 px-4 py-2 rounded-lg hover:bg-indigo-700 transition shadow-sm flex items-center gap-2">⚙️ Tetapan Sistem</button>
                         
-                        <!-- Navigation Toggle -->
                         <div class="bg-gray-200 p-1 rounded-lg flex space-x-1">
                             <button id="tab_senarai" onclick="adminApp.togolPaparan('senarai')" class="bg-white text-gray-800 shadow px-4 py-1.5 rounded-md text-sm font-bold transition">Senarai Penuh</button>
                             <button id="tab_ranking" onclick="adminApp.togolPaparan('ranking')" class="text-gray-600 hover:bg-gray-300 px-4 py-1.5 rounded-md text-sm font-bold transition">🏆 Paparan Ranking</button>
@@ -70,20 +71,16 @@
 
                 <p id="migrasi_status_teks" class="hidden mb-4 px-4 py-2 rounded-lg border text-xs font-semibold"></p>
 
-                <!-- SUB-VIEW: SENARAI PENYERTAAN -->
                 <div id="paparan_senarai">
-                    <!-- KAD RINGKASAN GURU -->
                     <h3 class="font-bold text-lg mb-4 text-gray-800 border-b pb-1">Statistik Pendaftaran Guru Pembimbing</h3>
                     <div class="grid grid-cols-2 md:grid-cols-2 gap-4 mb-8">
                         
-                        <!-- Animasi AI - Ada Pasukan -->
                         <div onclick="adminApp.bukaModalGuru('Animasi AI', true)" class="bg-indigo-50 border border-indigo-200 rounded-lg p-4 cursor-pointer hover:shadow-md hover:bg-indigo-100 transition text-center">
                             <div class="text-sm font-bold text-indigo-800 mb-1">Animasi AI</div>
                             <div class="text-xs text-gray-600 mb-2">Telah Berpasukan</div>
                             <div class="text-3xl font-black text-indigo-600" id="count_animasi_ada">0</div>
                         </div>
 
-                        <!-- Animasi AI - Tiada Pasukan -->
                         <div onclick="adminApp.bukaModalGuru('Animasi AI', false)" class="bg-red-50 border border-red-200 rounded-lg p-4 cursor-pointer hover:shadow-md hover:bg-red-100 transition text-center relative overflow-hidden">
                             <div class="text-sm font-bold text-red-800 mb-1">Animasi AI</div>
                             <div class="text-xs text-gray-600 mb-2">Belum Mendaftar Pasukan</div>
@@ -96,7 +93,6 @@
                     <div class="border-t-2 border-gray-300 my-6"></div>
                     <h3 class="font-bold text-lg mb-4 text-gray-800">Senarai Pasukan Berdaftar</h3>
 
-                    <!-- Filters & Telegram Action -->
                     <div class="bg-gray-50 p-4 rounded-lg mb-6 border">
                         <div class="flex flex-col md:flex-row gap-4 mb-4">
                             <div class="w-full md:w-1/3">
@@ -132,7 +128,6 @@
                         </div>
                     </div>
 
-                    <!-- Senarai Penuh -->
                     <div class="overflow-x-auto rounded-lg border">
                         <table class="min-w-full bg-white">
                             <thead>
@@ -146,13 +141,11 @@
                                 </tr>
                             </thead>
                             <tbody id="table_body" class="text-gray-600 text-sm font-light">
-                                <!-- Rows akan dimasukkan melalui JS -->
                             </tbody>
                         </table>
                     </div>
                 </div>
 
-                <!-- SUB-VIEW: PAPARAN RANKING -->
                 <div id="paparan_ranking" class="hidden">
                     <div class="bg-yellow-50 border border-yellow-200 p-4 rounded-lg mb-6 flex flex-col md:flex-row justify-between items-center gap-4">
                         <div>
@@ -177,13 +170,11 @@
                     </div>
 
                     <div id="container_ranking" class="space-y-8">
-                        <!-- Jadual ranking mengikut kategori dimasukkan melalui JS -->
                     </div>
                 </div>
 
             </section>
 
-            <!-- VIEW: BORANG PEMARKAHAN PASUKAN -->
             <section id="view_penilaian" class="hidden">
                 <button onclick="adminApp.tutupPenilaian()" class="text-gray-600 mb-4 hover:underline text-sm">&larr; Kembali ke Dashboard</button>
                 <div class="bg-indigo-50 border border-indigo-200 p-4 rounded-lg mb-6 flex flex-col md:flex-row md:justify-between md:items-center gap-4">
@@ -197,7 +188,6 @@
                 </div>
 
                 <div class="grid md:grid-cols-3 gap-6">
-                    <!-- Senarai Pemarkahan Juri -->
                     <div class="md:col-span-2">
                         <h3 class="font-bold text-lg mb-3">Rekod Pemarkahan Juri</h3>
                         <div class="overflow-x-auto rounded border">
@@ -214,7 +204,6 @@
                                     </tr>
                                 </thead>
                                 <tbody id="table_body_penilaian" class="text-gray-600 text-sm">
-                                    <!-- Rows akan dimasukkan melalui JS -->
                                 </tbody>
                                 <tfoot>
                                     <tr class="bg-indigo-100 font-bold text-indigo-900 border-t-2 border-indigo-300">
@@ -227,7 +216,6 @@
                         </div>
                     </div>
 
-                    <!-- Borang Tambah / Kemaskini Pemarkahan -->
                     <div class="bg-white border rounded-lg p-4 shadow-sm h-fit">
                         <h3 class="font-bold text-lg mb-3 border-b pb-2">Borang Rekod Markah</h3>
                         <form id="form_penilaian" onsubmit="adminApp.simpanPenilaian(event)">
@@ -237,7 +225,6 @@
                                 <label class="block text-sm font-bold mb-1">Nama Juri:</label>
                                 <input type="text" id="penilaian_nama_juri" list="senarai_juri_sedia_ada" required class="w-full px-2 py-1 border rounded" placeholder="Cth: Ahmad Albab">
                                 <datalist id="senarai_juri_sedia_ada">
-                                    <!-- Senarai unik nama juri dimasukkan oleh JS -->
                                 </datalist>
                                 <p class="text-[10px] text-gray-500 mt-1">Sila taip nama juri, atau pilih dari senarai sekiranya pernah dimasukkan.</p>
                             </div>
@@ -273,7 +260,6 @@
                 </div>
             </section>
 
-            <!-- VIEW: BORANG KEMASKINI PASUKAN -->
             <section id="view_kemaskini_pasukan" class="hidden">
                 <button onclick="adminApp.tutupBorangKemaskini()" class="text-gray-600 mb-4 hover:underline text-sm">&larr; Batal & Kembali ke Dashboard</button>
                 <h2 class="text-xl font-bold border-b pb-2 mb-4 bg-yellow-100 p-2 rounded">Kemaskini Maklumat Pasukan (Mod Admin)</h2>
@@ -286,7 +272,6 @@
                         <input type="text" id="edit_pasukan_nama" required class="w-full px-3 py-2 border rounded-lg" style="text-transform: none;">
                     </div>
 
-                    <!-- Maklumat Murid 1 -->
                     <div class="bg-blue-50 p-4 rounded-lg border mb-4">
                         <h3 class="font-bold mb-2 border-b border-blue-200">Maklumat Murid 1 (Ketua)</h3>
                         <div class="mb-2">
@@ -305,7 +290,6 @@
                         </div>
                     </div>
 
-                    <!-- Maklumat Murid 2 -->
                     <div class="bg-blue-50 p-4 rounded-lg border mb-6">
                         <h3 class="font-bold mb-2 border-b border-blue-200">Maklumat Murid 2</h3>
                         <div class="mb-2">
@@ -331,7 +315,6 @@
         </main>
     </div>
 
-    <!-- Modal Senarai Guru -->
     <div id="modal_senarai_guru" class="fixed inset-0 bg-black bg-opacity-60 z-[60] hidden flex items-center justify-center p-4">
         <div class="bg-white rounded-lg shadow-2xl w-full max-w-2xl flex flex-col max-h-[90vh]">
             <div class="p-4 border-b flex justify-between items-center bg-gray-50 rounded-t-lg">
@@ -342,7 +325,6 @@
             <div class="p-4 overflow-y-auto flex-grow bg-gray-50">
                 <p id="modal_guru_desc" class="text-sm text-gray-600 mb-4 border-b pb-2"></p>
                 <ul id="modal_guru_list" class="space-y-3">
-                    <!-- JS Render List Guru -->
                 </ul>
             </div>
             
@@ -352,7 +334,6 @@
         </div>
     </div>
 
-    <!-- Modal Tetapan Sistem -->
     <div id="modal_tetapan" class="fixed inset-0 bg-black bg-opacity-60 z-[60] hidden flex items-center justify-center p-4">
         <div class="bg-white rounded-lg shadow-2xl w-full max-w-lg flex flex-col">
             <div class="p-4 border-b bg-indigo-50 rounded-t-lg flex justify-between items-center">
@@ -390,7 +371,6 @@
         </div>
     </div>
 
-    <!-- Loading Overlay -->
     <div id="loading_overlay" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden flex items-center justify-center">
         <div class="bg-white p-6 rounded-lg shadow-lg text-center">
             <div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 mb-4"></div>
@@ -398,9 +378,9 @@
         </div>
     </div>
 
-    <script type="module" src="/js/core/config.js?v=2"></script>
-    <script type="module" src="/js/core/idb-cache.js?v=1"></script>
-    <script src="/supabase.data.js?v=2"></script>
-    <script type="module" src="/js/modules/admin.js?v=1"></script>
+    <script type="module" src="/js/core/config.js?v=3"></script>
+    <script type="module" src="/js/core/idb-cache.js?v=2"></script>
+    <script src="/supabase.data.js?v=3"></script>
+    <script type="module" src="/js/modules/admin.js?v=2"></script>
 </body>
 </html>

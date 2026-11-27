@@ -59,6 +59,11 @@ export const SCHEMA_REGISTRY = [
 let isMigrationInProgress = false;
 let activeAbortController = null;
 
+function getTargetSchema() {
+    const env = getEnv();
+    return env.SUPABASE_SCHEMA || "data_tanding";
+}
+
 function getClient() {
     if (window.supabaseClient) {
         return window.supabaseClient;
@@ -66,7 +71,12 @@ function getClient() {
 
     if (window.supabase && typeof window.supabase.createClient === "function") {
         const env = getEnv();
-        const client = window.supabase.createClient(env.SUPABASE_URL, env.SUPABASE_ANON_KEY);
+        const targetSchema = getTargetSchema();
+        const client = window.supabase.createClient(env.SUPABASE_URL, env.SUPABASE_ANON_KEY, {
+            db: {
+                schema: targetSchema
+            }
+        });
         window.supabaseClient = client;
         return client;
     }
@@ -102,12 +112,14 @@ async function resolveDynamicSchemas(signal) {
 
     try {
         const env = getEnv();
+        const targetSchema = getTargetSchema();
         const openApiRes = await fetch(`${env.SUPABASE_URL}/rest/v1/`, {
             method: "GET",
             headers: {
                 "apikey": env.SUPABASE_ANON_KEY,
                 "Authorization": `Bearer ${env.SUPABASE_ANON_KEY}`,
-                "Accept": "application/openapi+json"
+                "Accept": "application/openapi+json",
+                "Accept-Profile": targetSchema
             },
             signal
         });
@@ -250,6 +262,20 @@ function validateAndNormalizeImportPayload(parsedJson, schemaMap) {
     return normalizedBatches;
 }
 
+async function ensureSuperAdminSession(client) {
+    const { data, error } = await client.auth.getSession();
+    if (error || !data || !data.session || !data.session.user) {
+        throw new Error("Sesi SUPER_ADMIN tidak aktif. Sila log masuk menggunakan akaun Supabase Auth SUPER_ADMIN sebelum mengimport fail JSON.");
+    }
+
+    const user = data.session.user;
+    const role = user.app_metadata && user.app_metadata.role ? user.app_metadata.role : "";
+    if (role !== "SUPER_ADMIN") {
+        throw new Error("Akaun semasa tidak mempunyai peranan SUPER_ADMIN untuk mengimport data.");
+    }
+    return user;
+}
+
 export async function exportDatabaseJSON(options = {}) {
     if (isMigrationInProgress) {
         throw new Error("Operasi migrasi sedang berjalan. Sila tunggu sehingga selesai.");
@@ -360,6 +386,7 @@ export async function importDatabaseJSON(file, options = {}) {
     try {
         await envReady;
         const client = getClient();
+        await ensureSuperAdminSession(client);
         renderStatusMessage(statusElement, "Membaca dan mengesahkan fail JSON...", false);
 
         const rawText = await file.text();

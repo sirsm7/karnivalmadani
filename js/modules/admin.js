@@ -144,34 +144,84 @@ export const adminApp = {
 
     async login(e) {
         e.preventDefault();
+        const email = el("admin_email").value.trim().toLowerCase();
         const pwd = el("admin_pwd").value;
-        if (pwd === "ppdag@12345") {
+        setLoading(true, "Mengesahkan akaun SUPER ADMIN...");
+        try {
+            const client = await getClient();
+            const { data, error } = await client.auth.signInWithPassword({
+                email,
+                password: pwd
+            });
+
+            if (error || !data || !data.user) {
+                throw new Error(error ? error.message : "Emel atau katalaluan tidak sah.");
+            }
+
+            const role = data.user.app_metadata && data.user.app_metadata.role ? data.user.app_metadata.role : "";
+            if (role !== "SUPER_ADMIN") {
+                await client.auth.signOut();
+                throw new Error("Akaun ini tidak mempunyai kebenaran SUPER_ADMIN.");
+            }
+
             isLoggedIn = true;
             el("view_login").classList.add("hidden");
             el("view_dashboard").classList.remove("hidden");
+            const badge = el("admin_session_badge");
+            if (badge) badge.textContent = `Sesi Aktif: ${data.user.email} (SUPER_ADMIN)`;
             bindAdminLifecycle();
             await subscribeAdminRealtime();
             await adminApp.bukaTetapanSistem();
             await adminApp.loadSenarai();
-        } else {
-            window.Swal.fire("Ralat", "Katalaluan Salah!", "error");
+        } catch (err) {
+            window.Swal.fire("Ralat Log Masuk", err.message || "Gagal log masuk sebagai SUPER ADMIN.", "error");
+        } finally {
+            setLoading(false);
         }
     },
 
     async logout() {
         isLoggedIn = false;
         await realtimeSync.unsubscribe("admin_dashboard_live");
+        try {
+            const client = await getClient();
+            await client.auth.signOut();
+        } catch (_) {
+        }
         el("view_dashboard").classList.add("hidden");
         el("view_penilaian").classList.add("hidden");
         el("view_kemaskini_pasukan").classList.add("hidden");
         el("view_login").classList.remove("hidden");
+        if (el("admin_email")) el("admin_email").value = "";
         el("admin_pwd").value = "";
+        const badge = el("admin_session_badge");
+        if (badge) badge.textContent = "";
         adminApp.dataPasukan = [];
         adminApp.dataGuruPenuh = [];
         adminApp.dataPenilaian = [];
         adminApp.currentPenilaianData = [];
         adminApp.currentPasukanId = null;
         adminApp.currentVideoUrl = null;
+    },
+
+    async restoreAdminSession() {
+        try {
+            const client = await getClient();
+            const { data } = await client.auth.getSession();
+            const user = data && data.session ? data.session.user : null;
+            const role = user && user.app_metadata && user.app_metadata.role ? user.app_metadata.role : "";
+            if (user && role === "SUPER_ADMIN") {
+                isLoggedIn = true;
+                el("view_login").classList.add("hidden");
+                el("view_dashboard").classList.remove("hidden");
+                const badge = el("admin_session_badge");
+                if (badge) badge.textContent = `Sesi Aktif: ${user.email} (SUPER_ADMIN)`;
+                bindAdminLifecycle();
+                await subscribeAdminRealtime();
+                await adminApp.loadSenarai();
+            }
+        } catch (_) {
+        }
     },
 
     async bukaTetapanSistem() {
@@ -1579,6 +1629,8 @@ export function initAdminPortal() {
     if (inputImport) {
         inputImport.addEventListener("change", (event) => adminApp.prosesImportJsonMigrasi(event));
     }
+
+    adminApp.restoreAdminSession();
 }
 
 if (document.readyState === "loading") {

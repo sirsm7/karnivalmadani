@@ -30,6 +30,9 @@ async function loadEnvironment() {
     const raw = await response.json();
     const supabaseUrl = raw && typeof raw.SUPABASE_URL === "string" ? raw.SUPABASE_URL.trim() : "";
     const supabaseAnonKey = raw && typeof raw.SUPABASE_ANON_KEY === "string" ? raw.SUPABASE_ANON_KEY.trim() : "";
+    const supabaseSchema = raw && typeof raw.SUPABASE_SCHEMA === "string" && raw.SUPABASE_SCHEMA.trim()
+        ? raw.SUPABASE_SCHEMA.trim()
+        : "data_tanding";
     const gasEndpointUrl = raw && typeof raw.GAS_ENDPOINT_URL === "string" ? raw.GAS_ENDPOINT_URL.trim() : "";
 
     if (!supabaseUrl || !supabaseAnonKey) {
@@ -38,7 +41,8 @@ async function loadEnvironment() {
 
     const envObject = {
         SUPABASE_URL: supabaseUrl,
-        SUPABASE_ANON_KEY: supabaseAnonKey
+        SUPABASE_ANON_KEY: supabaseAnonKey,
+        SUPABASE_SCHEMA: supabaseSchema
     };
 
     if (gasEndpointUrl) {
